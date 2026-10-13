@@ -1,7 +1,7 @@
 // Offline support: network first, cached copy when offline.
-const CACHE = 'a1-trainer-v1';
+const CACHE = 'a1-trainer-v2';
 const FILES = [
-  './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg',
+  './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
   'js/data/vocab.js', 'js/data/hoeren.js', 'js/data/lesen.js', 'js/data/grammatik.js', 'js/data/schreiben.js', 'js/data/sprechen.js',
   'js/i18n.js', 'js/util.js', 'js/bank.js', 'js/speech.js', 'js/app.js',
 ];

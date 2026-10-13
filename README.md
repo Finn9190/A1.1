@@ -35,6 +35,14 @@ The exam parts follow the Goethe-Institut **"Start Deutsch 1"** (A1) format: **H
 2. Under "Build and deployment", choose **Deploy from a branch**. Select the branch with this code and the folder **/ (root)**, then click **Save**.
 3. After a minute the app is at `https://<user>.github.io/A1.1/`. Bookmark it, or install it from the browser's address bar.
 
+**On an Android phone**
+
+1. Open the GitHub Pages link in **Chrome**.
+2. Tap **⋮ → Install app** (on some phones it says **Add to Home screen → Install**).
+3. The app appears in the app drawer with its own icon. It opens full screen, works offline, and the phone's Back button returns to the start screen.
+
+The phone keeps its own progress. To copy progress between laptop and phone, use **Progress & settings → Copy code**, then **Load code** on the other device.
+
 **Option 2 – Locally**
 
 Run `python3 -m http.server` in this folder, then open http://localhost:8000.

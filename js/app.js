@@ -179,8 +179,13 @@
     const cd = document.getElementById('countdown');
     const d = daysToExam();
     cd.hidden = false;
-    if (d === null || d < 0) { cd.textContent = t('setDate'); cd.className = 'countdown is-unset'; }
-    else { cd.textContent = d === 0 ? t('examToday') : d === 1 ? t('dayLeft') : t('daysLeft', { n: d }); cd.className = 'countdown' + (d <= 7 ? ' is-near' : ''); }
+    if (d === null || d < 0) { cd.innerHTML = `<span class="cd-long">${esc(t('setDate'))}</span><span class="cd-short" aria-hidden="true">📅</span>`; cd.className = 'countdown is-unset'; }
+    else {
+      const long = d === 0 ? t('examToday') : d === 1 ? t('dayLeft') : t('daysLeft', { n: d });
+      cd.innerHTML = `<span class="cd-long">${esc(long)}</span><span class="cd-short" aria-hidden="true">📅 ${d}</span>`;
+      cd.setAttribute('aria-label', long);
+      cd.className = 'countdown' + (d <= 7 ? ' is-near' : '');
+    }
     cd.setAttribute('data-act', 'progress');
     cd.setAttribute('role', 'button');
     cd.tabIndex = 0;
@@ -731,7 +736,10 @@
   }
 
   // ---------------- Render ----------------
-  function go(v) {
+  function go(v, fromHistory) {
+    if (!fromHistory && v !== 'home' && view !== v) {
+      try { history.pushState({ v }, ''); } catch (e) { /* history unavailable */ }
+    }
     view = v;
     ui.micError = null;
     render();
@@ -987,6 +995,13 @@
       if (wc) wc.textContent = t('words', { n });
     }
     saveSoon();
+  });
+
+  // Phone back button: go back to the start screen instead of closing the app
+  window.addEventListener('popstate', () => {
+    if (view === 'home') return;
+    SP.stop(); SP.stopListening(); ui.listening = false;
+    go('home', true);
   });
 
   // Mock exam timer

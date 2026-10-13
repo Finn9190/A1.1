@@ -90,6 +90,7 @@ p { margin: 0 0 0.6em; }
   background: var(--blue-soft); color: var(--blue); cursor: pointer; white-space: nowrap;
 }
 .countdown.is-near { background: var(--red-soft); color: var(--red); }
+.cd-short { display: none; }
 .countdown.is-unset { background: transparent; border: 1.5px dashed var(--line); color: var(--muted); font-weight: 400; }
 .lang { display: inline-flex; border: 2px solid var(--blue); border-radius: 8px; overflow: hidden; }
 .lang button { border: 0; background: var(--sheet); color: var(--blue); font-weight: 700; padding: 6px 14px; cursor: pointer; font-size: 0.95rem; min-height: 40px; }
@@ -363,12 +364,16 @@ p { margin: 0 0 0.6em; }
   .hero h1 { font-size: 2.4rem; }
 }
 @media (max-width: 520px) {
+  .top-inner { flex-wrap: nowrap; padding-block: 8px; }
+  .brand-name { display: none; }
+  .cd-long { display: none; }
+  .cd-short { display: inline; }
+  .countdown { padding: 6px 10px; font-size: 0.95rem; }
   .action-pair, .ads, .tiles { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: minmax(0, 1fr) 5.5em; }
   .bar-row .bar { grid-column: 1 / -1; grid-row: 2; }
   .question { padding: 18px 16px 22px; }
-  .brand-name { font-size: 1.2rem; }
   .action-primary .action-title { font-size: 1.9rem; }
   .q-big, .card-word { font-size: 1.8rem; }
 }
