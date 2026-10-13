@@ -6,7 +6,7 @@
   const main = document.getElementById('main');
 
   // ---------------- State ----------------
-  const defaults = () => ({ lang: 'en', examDate: '', stats: {}, agg: {}, seen: {}, mistakes: {}, days: {}, mocks: [], session: null, voiceURI: '', rate: 0.9, level: 'A1.1' });
+  const defaults = () => ({ lang: 'en', examDate: '', stats: {}, agg: {}, seen: {}, mistakes: {}, days: {}, mocks: [], session: null, voiceURI: '', rate: 0.9, levels: ['A1.1'] });
   let S = load();
   function load() {
     try {
@@ -40,9 +40,23 @@
     return 1 - a.ok / a.n;
   }
   // Unseen questions first, weak topics more often, never the same group twice.
-  const LEVELS = ['A1.1', 'A1.2', 'both'];
-  const levelOk = (e) => S.level === 'both' || e.level === 'all' || e.level === S.level;
-  const levelLabel = (l) => (l === 'both' ? 'A1.1 + A1.2' : l);
+  const LEVELS = ['A1.1', 'A1.2', 'A2.1', 'A2.2'];
+  // Older versions stored a single level ('A1.1', 'A1.2' or 'both')
+  if (!Array.isArray(S.levels)) S.levels = S.level === 'both' ? ['A1.1', 'A1.2'] : [S.level || 'A1.1'];
+  delete S.level;
+  const levelOk = (e) => e.level === 'all' || S.levels.includes(e.level);
+  const sortLv = (ls) => LEVELS.filter((l) => ls.includes(l));
+  const levelLabel = (ls) => {
+    if (typeof ls === 'string') return ls === 'both' ? 'A1.1 + A1.2' : ls;
+    const a = sortLv(ls).join('+');
+    if (a === 'A1.1+A1.2') return 'A1';
+    if (a === 'A2.1+A2.2') return 'A2';
+    if (a === 'A1.1+A1.2+A2.1+A2.2') return 'A1 + A2';
+    return sortLv(ls).join(' + ');
+  };
+  const stampLabel = () => { const l = levelLabel(S.levels); return l.length > 6 ? 'A1–A2' : l; };
+  const isA2Format = () => S.levels.some((l) => l.startsWith('A2'));
+  const sections = (ss) => (ss && ss.format === 'A2' ? A1.SECTIONS_A2 : A1.SECTIONS);
   function choose(filter, n, exclude) {
     const ex = exclude || new Set();
     const scored = A1.bank.entries.filter((e) => levelOk(e) && filter(e) && !ex.has(e.id))
@@ -88,15 +102,25 @@
 
   function buildMock() {
     const sec = (key, list) => list.map((e) => Object.assign(e.make(), { section: key, level: e.level }));
-    const hoeren = [1, 2, 3].flatMap((p) => choose((e) => e.skill === 'hoeren' && e.part === p, p === 1 ? 6 : p === 2 ? 4 : 5));
-    const groups = uniq(A1.bank.entries.filter((e) => e.skill === 'lesen' && e.part === 1).map((e) => e.group));
-    const pickedGroups = choose((e) => e.skill === 'lesen' && e.part === 1, 2).map((e) => e.group);
+    const a1 = (e) => !e.level.startsWith('A2');
+    if (isA2Format()) {
+      const a2 = (e) => e.level.startsWith('A2');
+      const grp = (f) => { const g = choose((e) => a2(e) && f(e) && e.group, 1)[0]; return g ? A1.bank.entries.filter((e) => e.group === g.group) : []; };
+      const hoeren = choose((e) => a2(e) && e.skill === 'hoeren' && e.part === 1, 5)
+        .concat(choose((e) => a2(e) && e.skill === 'hoeren' && e.part === 3, 5), grp((e) => e.skill === 'hoeren' && e.part === 4));
+      const lesen = grp((e) => e.skill === 'lesen' && e.part === 1).concat(grp((e) => e.skill === 'lesen' && e.part === 2), grp((e) => e.skill === 'lesen' && e.part === 3),
+        choose((e) => a2(e) && e.skill === 'lesen' && e.part === 4, 5));
+      const schreiben = choose((e) => a2(e) && e.skill === 'schreiben' && e.part === 1, 1).concat(choose((e) => a2(e) && e.skill === 'schreiben' && e.part === 2, 1));
+      const sprechen = choose((e) => a2(e) && /sp2-/.test(e.id), 2).concat(choose((e) => a2(e) && /mono-/.test(e.id), 1), choose((e) => a2(e) && /plan-/.test(e.id), 1));
+      return sec('hoeren', hoeren).concat(sec('lesen', lesen), sec('schreiben', schreiben), sec('sprechen', sprechen));
+    }
+    const hoeren = [1, 2, 3].flatMap((p) => choose((e) => a1(e) && e.skill === 'hoeren' && e.part === p, p === 1 ? 6 : p === 2 ? 4 : 5));
+    const pickedGroups = choose((e) => a1(e) && e.skill === 'lesen' && e.part === 1 && e.group, 2).map((e) => e.group);
     const lesen1 = A1.bank.entries.filter((e) => pickedGroups.includes(e.group));
-    const lesen = lesen1.concat(choose((e) => e.skill === 'lesen' && e.part === 2, 5), choose((e) => e.skill === 'lesen' && e.part === 3, 5));
-    const schreiben = choose((e) => e.skill === 'schreiben' && e.part === 1, 1).concat(choose((e) => e.skill === 'schreiben' && e.part === 2, 1));
+    const lesen = lesen1.concat(choose((e) => a1(e) && e.skill === 'lesen' && e.part === 2 && !e.group, 5), choose((e) => a1(e) && e.skill === 'lesen' && e.part === 3 && !e.group && !/^map/.test(e.id), 5));
+    const schreiben = choose((e) => a1(e) && e.skill === 'schreiben' && e.part === 1, 1).concat(choose((e) => a1(e) && e.skill === 'schreiben' && e.part === 2, 1));
     const sprechen = [A1.bank.byId['sp1-intro'], A1.bank.byId['sp1-spell']]
-      .concat(choose((e) => e.skill === 'sprechen' && e.part === 2, 2), choose((e) => e.skill === 'sprechen' && e.part === 3, 2));
-    void groups;
+      .concat(choose((e) => a1(e) && /sp2-/.test(e.id), 2), choose((e) => a1(e) && /sp3-/.test(e.id), 2));
     return sec('hoeren', hoeren).concat(sec('lesen', lesen), sec('schreiben', schreiben), sec('sprechen', sprechen));
   }
 
@@ -107,7 +131,7 @@
     else items = buildEntries(mode, arg).map((e) => Object.assign(e.make(), { level: e.level }));
     if (!items.length) { ui.msg = t('emptyPool'); render(); return; }
     S.session = {
-      mode, arg, items, i: 0, results: [], cur: null, level: S.level,
+      mode, arg, items, i: 0, results: [], cur: null, level: levelLabel(S.levels), format: mode === 'mock' && isA2Format() ? 'A2' : 'A1',
       feedback: mode !== 'mock', maxPlays: mode === 'mock' ? 2 : null,
       introDone: {}, secStart: {}, started: Date.now(),
     };
@@ -180,7 +204,7 @@
   // ---------------- Header ----------------
   function renderHeader() {
     const stamp = document.querySelector('.stamp');
-    if (stamp) stamp.textContent = S.level === 'both' ? 'A1' : S.level;
+    if (stamp) stamp.textContent = stampLabel();
     document.getElementById('lang-en').setAttribute('aria-pressed', S.lang === 'en');
     document.getElementById('lang-de').setAttribute('aria-pressed', S.lang === 'de');
     document.documentElement.lang = S.lang;
@@ -243,14 +267,15 @@
           <h1>${esc(t('hello'))}</h1>
           <p class="lead">${esc(t('homeLead'))}</p>
         </div>
-        ${st ? `<p class="streak"><span aria-hidden="true">🔥</span> ${esc(t('streak', { n: st }))}</p>` : ''}
+        ${st ? `<p class="streak"><span aria-hidden="true">🔥</span> ${esc(st === 1 ? t('streak1') : t('streak', { n: st }))}</p>` : ''}
       </section>
       <section class="level-pick" aria-labelledby="level-h">
         <h2 id="level-h" class="eyebrow">${esc(t('levelTitle'))}</h2>
         <div class="level-seg" role="group" aria-labelledby="level-h">
-          ${LEVELS.map((l) => `<button type="button" data-act="level" data-arg="${l}" aria-pressed="${S.level === l}">
-            <span class="level-name">${esc(levelLabel(l))}</span><span class="level-sub">${esc(t('levelSub_' + l.replace('.', '')))}</span></button>`).join('')}
+          ${LEVELS.map((l) => `<button type="button" data-act="level" data-arg="${l}" aria-pressed="${S.levels.includes(l)}">
+            <span class="level-name"><span class="level-box" aria-hidden="true">${S.levels.includes(l) ? '✓' : ''}</span>${esc(l)}</span><span class="level-sub">${esc(t('levelSub_' + l.replace('.', '')))}</span></button>`).join('')}
         </div>
+        <p class="muted small level-hint">${esc(t('levelHint'))} <strong>${esc(levelLabel(S.levels))}</strong></p>
       </section>
 
       <div class="home-grid">
@@ -262,7 +287,7 @@
           </button>
           <button type="button" class="action" data-act="mock">
             <span class="action-title">${esc(t('mockTitle'))}</span>
-            <span class="action-sub">${esc(t('mockSub'))}</span>
+            <span class="action-sub">${esc(t(isA2Format() ? 'mockSubA2' : 'mockSub'))}</span>
             ${lastMock ? `<span class="action-meta">${esc(t('lastMock', { p: lastMock.total }))}</span>` : ''}
           </button>
           <div class="action-pair">
@@ -339,6 +364,7 @@
 
   function promptBlock(it) {
     let out = '';
+    if (it.map) out += `<div class="map-wrap">${mapSVG(it.map)}</div>`;
     if (it.clock) out += `<div class="visual">${clockSVG(it.clock[0], it.clock[1])}<span class="digital">${it.clock[0]}:${String(it.clock[1]).padStart(2, '0')}</span></div>`;
     else if (it.visual && it.visualText) out += `<div class="visual"><span class="visual-num">${esc(it.visual)}</span></div>`;
     else if (it.visual) out += `<div class="visual"><span class="visual-emoji" aria-hidden="true">${it.visual}</span></div>`;
@@ -346,7 +372,28 @@
     if (it.situation) out += `<p class="situation">${esc(L(it.situation))}</p>`;
     if (it.q) out += `<p class="q ${it.big ? 'q-big' : ''}">${gap(it.q)}</p>`;
     if (it.hintText && S.lang === 'en') out += `<p class="hint">(${esc(it.hintText)})</p>`;
+    if (it.hint) out += `<p class="gap-hint">${esc(it.hint)}</p>`;
     return out;
+  }
+
+  // Simple town map: main street from "Sie sind hier" upwards, three side streets left and right
+  function mapSVG(m) {
+    const Y = { 1: 236, 2: 156, 3: 76 };
+    const box = (p) => {
+      const isT = m.target === p.slot;
+      let x, y, w = 74, h = 46;
+      if (p.slot === 'top') { x = 143; y = 4; } else { const n = Number(p.slot[0]); y = Y[n] - h / 2; x = p.slot[1] === 'L' ? 4 : 360 - 4 - w; }
+      return `<g class="map-bld ${isT ? 'is-target' : ''}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5"/>
+        <text x="${x + w / 2}" y="${y + 19}" class="map-emo">${p.emoji}</text><text x="${x + w / 2}" y="${y + 38}" class="map-name">${esc(p.name)}</text>
+        ${isT ? `<text x="${x + w - 8}" y="${y + 12}" class="map-star">★</text>` : ''}</g>`;
+    };
+    const streets = [1, 2, 3].map((n) => `<rect class="map-road" x="78" y="${Y[n] - 12}" width="204" height="24"/>
+      <text class="map-street-no" x="${n === 3 ? 100 : 100}" y="${Y[n] + 4}">${n}.</text><text class="map-street-no" x="252" y="${Y[n] + 4}">${n}.</text>`).join('');
+    return `<svg class="map" viewBox="0 0 360 330" role="img" aria-label="Stadtplan">
+      <rect class="map-road" x="166" y="50" width="28" height="262"/>${streets}
+      <line class="map-mid" x1="180" y1="56" x2="180" y2="306"/>
+      ${m.places.map(box).join('')}
+      <text x="180" y="326" class="map-start">📍 Sie sind hier</text></svg>`;
   }
 
   function answerText(it) {
@@ -354,6 +401,7 @@
       case 'mc': return it.ads ? ['a', 'b'][it.answer] + ') ' + it.options[it.answer].split('\n')[0] : it.options[it.answer];
       case 'tf': return it.answer ? 'richtig' : 'falsch';
       case 'type': return it.accepted[0];
+      case 'gap': return it.q.replace('___', it.accepted[0].replace(/ … /, ' '));
       case 'order': return it.answer.join(' ') + it.end;
       case 'form': return it.fields.map((f) => `${f.label}: ${f.accepted[0]}`).join(' · ');
       default: return it.model || '';
@@ -421,6 +469,14 @@
       ${cur.done ? '' : umlautBar('typed')}`;
   }
 
+  function bodyGap(it, cur) {
+    return `<div class="type-row">
+        <input type="text" id="typed" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(t('typeHere'))}" value="${esc(cur.typed)}" ${cur.done ? 'readonly' : ''} data-bind="typed">
+        ${cur.done ? '' : btn('checkType', t('check'), 'btn-primary')}
+      </div>
+      ${cur.done ? '' : umlautBar('typed')}`;
+  }
+
   function bodyOrder(it, cur, ss) {
     const used = new Set(cur.order);
     const answerLine = cur.order.map((ti, pos) => `<button type="button" class="word is-placed" data-act="unplace" data-pos="${pos}" ${cur.done ? 'disabled' : ''}>${esc(it.tokens[ti])}</button>`).join('');
@@ -482,6 +538,8 @@
     if (it.mode === 'intro') card = `<div class="card-speak"><p class="eyebrow">${esc(t('pointsLabel'))}</p>${pointList(it.points, '', false)}</div>`;
     else if (it.mode === 'topic') card = `<div class="card-speak card-topic"><p class="card-theme">Thema: ${esc(it.theme)}</p><p class="card-word">${esc(it.word)}</p></div>`;
     else if (it.mode === 'request') card = `<div class="card-speak card-topic"><p class="card-emoji" aria-hidden="true">${it.emoji}</p><p class="card-word">${esc(it.word)}</p></div>`;
+    else if (it.mode === 'monolog') card = `<div class="card-speak"><p class="card-theme">Thema: ${esc(it.theme)}</p>${pointList(it.points, '', false)}</div>`;
+    else if (it.mode === 'plan') card = `<div class="card-speak"><p class="situation">${esc(L(it.situation))}</p>${pointList(it.points, '', false)}</div>`;
     let mic = '';
     if (!cur.revealed) {
       if (SP.canListen) {
@@ -505,10 +563,10 @@
 
   function sectionIntro(ss, key) {
     const items = ss.items.filter((x) => x.section === key);
-    const sec = A1.SECTIONS[key];
+    const sec = sections(ss)[key];
     const idx = ['hoeren', 'lesen', 'schreiben', 'sprechen'].indexOf(key) + 1;
     return `<section class="sheet intro">
-      <p class="eyebrow">${esc(t('mockTitle'))} · ${idx} / 4</p>
+      <p class="eyebrow">${esc(t('mockTitle'))} · ${esc(ss.format === 'A2' ? 'Goethe-Zertifikat A2' : 'Start Deutsch 1')} · ${idx} / 4</p>
       <h1>${esc(A1.SKILLS[key].de)} <span class="muted">${S.lang === 'en' ? '· ' + esc(A1.SKILLS[key].en) : ''}</span></h1>
       <p class="lead">${esc(L(sec))}</p>
       <p class="muted">${esc(t('sectionCount', { n: items.length }))} · ${esc(t('sectionMinutes', { m: sec.minutes }))}</p>
@@ -520,7 +578,7 @@
   function timerText(ss, key) {
     const start = ss.secStart[key];
     if (!start) return '';
-    const left = A1.SECTIONS[key].minutes * 60 - Math.floor((Date.now() - start) / 1000);
+    const left = sections(ss)[key].minutes * 60 - Math.floor((Date.now() - start) / 1000);
     if (left <= 0) return t('timeUp');
     const mm = Math.floor(left / 60), s = left % 60;
     return t('timeLeft', { t: `${mm}:${String(s).padStart(2, '0')}` });
@@ -543,6 +601,7 @@
     else if (it.type === 'form') body = bodyForm(it, cur, ss);
     else if (it.type === 'write') body = bodyWrite(it, cur);
     else if (it.type === 'speak') body = bodySpeak(it, cur);
+    else if (it.type === 'gap') body = bodyGap(it, cur);
     const partChip = it.part && ['hoeren', 'lesen', 'schreiben', 'sprechen'].includes(it.skill) ? `<span class="chip-static">${esc(t('part', { n: it.part }))}</span>` : '';
     const last = ss.i === n - 1;
     const timer = isMock ? `<span class="timer" id="timer">${esc(timerText(ss, it.section))}</span>` : '';
@@ -579,7 +638,7 @@
     const num = (x) => (Math.round(x * 10) / 10).toLocaleString(S.lang === 'de' ? 'de-DE' : 'en-GB');
     let overallMock = null;
     const wrong = items.map((it, i) => ({ it, r: res[i] })).filter((x) => !x.r || x.r.score < 0.99);
-    const label = (it) => it.q || it.prompt || L(it.situation) || (it.mode === 'topic' ? `Thema: ${it.theme} – ${it.word}` : it.word) || L(it.task);
+    const label = (it) => it.q || it.prompt || L(it.situation) || (it.mode === 'topic' ? `Thema: ${it.theme} – ${it.word}` : it.mode === 'monolog' ? `Thema: ${it.theme}` : it.word) || L(it.task);
     const given = (it, r) => {
       if (!r || r.given == null || r.given === '') return t('noAnswer');
       if (it.type === 'mc') return it.options[r.given];
@@ -655,7 +714,7 @@
       </section>
       <div class="two-col">
         <section class="block"><h2>${esc(t('bySkillTitle'))}</h2><div class="bars">${skills}</div>
-          <h2 class="sub-h">${esc(t('byLevelTitle'))}</h2><div class="bars">${['A1.1', 'A1.2'].map((l) => { const a = S.agg['l:' + l]; return a ? barRow(l, pct(a.ok, a.n), `${pct(a.ok, a.n)} % · ${a.n}`) : barRowEmpty(l); }).join('')}</div></section>
+          <h2 class="sub-h">${esc(t('byLevelTitle'))}</h2><div class="bars">${LEVELS.map((l) => { const a = S.agg['l:' + l]; return a ? barRow(l, pct(a.ok, a.n), `${pct(a.ok, a.n)} % · ${a.n}`) : barRowEmpty(l); }).join('')}</div></section>
         <section class="block"><h2>${esc(t('mockHistory'))}</h2>${mocks ? `<ul class="mock-list">${mocks}</ul>` : `<p class="muted">${esc(t('noData'))}</p>`}</section>
       </div>
       <section class="block"><h2>${esc(t('byTopicTitle'))}</h2><div class="bars">${topics}</div></section>
@@ -786,6 +845,20 @@
   function checkType() {
     const { it, cur } = current();
     if (cur.done) return;
+    if (it.type === 'gap') {
+      const typed = cur.typed.trim();
+      const g = A1.util.norm(typed);
+      let score = 0, note = null;
+      for (const a of it.accepted) {
+        const na = A1.util.norm(a);
+        if (g === na) { score = 1; note = null; break; }
+        if (na.length >= 7 && A1.util.lev(g, na) <= 1) { score = 1; note = 'almost'; }
+      }
+      cur.note = note;
+      record(it, score, typed);
+      render();
+      return;
+    }
     const typed = cur.typed.trim();
     let score = 0, note = null;
     const m = matchTyped(typed, it.accepted);
@@ -813,7 +886,12 @@
   const acts = {
     home: () => { SP.stop(); ui.msg = null; go('home'); },
     lang: (el) => { S.lang = el.dataset.lang; save(); render(); },
-    level: (el) => { S.level = el.dataset.arg; ui.msg = null; save(); render(); },
+    level: (el) => {
+      const l = el.dataset.arg;
+      if (S.levels.includes(l)) { if (S.levels.length > 1) S.levels = S.levels.filter((x) => x !== l); }
+      else S.levels = sortLv(S.levels.concat(l));
+      ui.msg = null; save(); render();
+    },
     quick: () => { ui.msg = null; startSession('quick'); },
     mock: () => { ui.msg = null; startSession('mock'); },
     mistakes: () => { ui.msg = null; startSession('mistakes'); },

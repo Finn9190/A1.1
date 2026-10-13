@@ -51,7 +51,7 @@ A1.util = (function () {
   // Normalise typed text for comparison: lower case, no punctuation, umlauts spelled out.
   function norm(s) {
     return String(s || '').toLowerCase().trim()
-      .replace(/[.!?,;:„“"'()\-–]/g, ' ')
+      .replace(/[.!?,;:„“"'()\-–…]/g, ' ')
       .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
       .replace(/\s+/g, ' ').trim();
   }

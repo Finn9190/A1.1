@@ -1,17 +1,25 @@
-# A1 Deutsch-Trainer (A1.1 + A1.2)
+# Deutsch-Trainer A1–A2 (A1.1, A1.2, A2.1, A2.2)
 
-A practice app for the German A1.1 and A1.2 exams. It runs in any browser on a computer, with no install and no account.
+A practice app for German levels A1.1, A1.2, A2.1 and A2.2. It runs in any browser on a computer, with no install and no account.
 
 The exam parts follow the Goethe-Institut **"Start Deutsch 1"** (A1) format: **Hören, Lesen, Schreiben, Sprechen**.
 
 ## What's inside
 
-- **Choose your level.** The start screen has three buttons:
-  - **A1.1**: the first half of A1. Basics, present tense, accusative, numbers, time.
-  - **A1.2**: the second half. Perfekt, war/hatte, dative, wo?/wohin?, dürfen/sollen/wollen, du/ihr commands, comparatives, und/aber/oder/denn. Topics include health, home and furniture, travel, clothes and colours, celebrations, and offices/bank/post.
-  - **A1.1 + A1.2**: both combined, like the full A1 exam.
+- **Choose your levels.** Tap one level, or several to mix them:
+  - **A1.1**: basics, present tense, accusative, numbers, time, directions.
+  - **A1.2**: Perfekt, war/hatte, dative, wo?/wohin?, dürfen/sollen/wollen, du/ihr commands, comparatives. Topics include health, home, travel, clothes, celebrations and offices.
+  - **A2.1**: weil/dass/wenn, reflexive verbs, verbs with prepositions, modal verbs in the past, adjective endings. Topics include work and job applications, media, school and clubs.
+  - **A2.2**: Konjunktiv II (hätte, wäre, würde, sollte), relative clauses, indirect questions, als/wenn, Präteritum, passive, zu + infinitive. Topics include the environment, online shopping and complaints.
 
-  Everything follows the chosen level: practice rounds, mock exams, mistake review, word cards and topics.
+  Everything follows the chosen levels: practice rounds, mistake review, word cards and topics. The mock exam uses the **Start Deutsch 1** format for A1 and the **Goethe-Zertifikat A2** format as soon as an A2 level is selected.
+- **Course-book style exercises:**
+  - Typed fill-in-the-gap ("Ergänzen Sie in der richtigen Form")
+  - "Was passt?" dialogue pairs
+  - Imperative from a situation ("Ich bin müde. → Dann geh ins Bett!")
+  - Directions with a town map ("Wie komme ich zum …?")
+  - Transport pictures ("Sie fahren drei Stationen mit der U-Bahn")
+  - Emails and text messages to write
 
 - **10 new questions.** One click gives a fresh mixed round. The app shows questions she hasn't seen yet first, brings back weak topics more often, and repeats earlier mistakes.
 - **Mock exam (Probeprüfung).** A timed simulation of all four parts:
@@ -28,7 +36,7 @@ The exam parts follow the Goethe-Institut **"Start Deutsch 1"** (A1) format: **H
 - **English / German switch.** The button is always in the top bar. Instructions and explanations switch language; the exercises stay in German.
 - **Listening** uses the browser's German voice, so no audio files are needed. **Speaking** uses the microphone through speech recognition. It works best in Chrome or Edge.
 
-### Where the 2,500+ questions come from
+### Where the 3,500+ questions come from
 
 - About 300 are written by hand: listening dialogues, announcements and phone messages; reading emails, ads and signs; grammar gaps; set phrases; forms; writing tasks and speaking cards.
 - The rest are built from templates over the vocabulary list: der/die/das, plurals, meanings, typing words, accusative, er/sie/es, mein/dein/Ihr and verb forms.
@@ -69,6 +77,8 @@ All content is in plain JavaScript files in `js/data/`:
 | `schreiben.js` | Forms and writing tasks |
 | `sprechen.js` | Speaking cards |
 | `a12.js` | All A1.2 content (vocabulary, Perfekt list, listening, reading, grammar, writing, speaking) |
+| `a2.js` | All A2.1 and A2.2 content, including A2 speaking cards (talk about yourself, plan together) |
+| `uebungen.js` | Course-book style exercises for every level: typed gaps, "Was passt?" pairs, more emails |
 
 After editing, run the check:
 

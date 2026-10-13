@@ -182,14 +182,30 @@ p { margin: 0 0 0.6em; }
 
 /* Level switch */
 .level-pick { margin-bottom: 22px; }
-.level-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px solid var(--blue); border-radius: var(--r); overflow: hidden; background: var(--sheet); }
+.level-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 2px solid var(--blue); border-radius: var(--r); overflow: hidden; background: var(--sheet); }
 .level-seg button { display: grid; gap: 2px; text-align: left; padding: 12px 16px; border: 0; border-left: 2px solid var(--blue); background: var(--sheet); color: var(--ink); cursor: pointer; min-height: 64px; min-width: 0; }
 .level-seg button:first-child { border-left: 0; }
 .level-seg button:hover { background: var(--blue-soft); }
 .level-seg button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.level-seg button[aria-pressed="true"] + button[aria-pressed="true"] { border-left-color: color-mix(in srgb, var(--on-blue) 40%, var(--blue)); }
 .level-name { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
 .level-sub { font-size: 0.85rem; opacity: 0.85; }
 .level-chip { background: var(--marker); color: var(--ink); }
+.level-name { display: flex; align-items: center; gap: 8px; }
+.level-box { width: 20px; height: 20px; border: 2px solid currentColor; border-radius: 3px; display: inline-grid; place-items: center; font-size: 0.85rem; flex: none; }
+.level-hint { margin-top: 8px; }
+.gap-hint { display: inline-block; font-size: 0.9rem; color: var(--muted); border: 1px dashed var(--line); border-radius: 6px; padding: 2px 10px; margin: -6px 0 14px; }
+.map-wrap { margin: 0 0 16px; max-width: 520px; }
+.map { width: 100%; height: auto; display: block; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
+.map-road { fill: var(--line); }
+.map-mid { stroke: var(--sheet); stroke-width: 2; stroke-dasharray: 8 8; }
+.map-bld rect { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+.map-bld.is-target rect { fill: var(--marker); stroke-width: 2.5; }
+.map-emo { font-size: 16px; text-anchor: middle; }
+.map-name { font-size: 10.5px; text-anchor: middle; fill: var(--ink); font-family: var(--font-body); font-weight: 700; }
+.map-star { font-size: 14px; text-anchor: middle; fill: var(--red); }
+.map-street-no { font-size: 10px; fill: var(--muted); font-family: var(--font-body); }
+.map-start { font-size: 12px; text-anchor: middle; fill: var(--ink); font-family: var(--font-body); font-weight: 700; }
 .sub-h { margin-top: 24px; }
 
 /* ---------- Quiz ---------- */
@@ -369,6 +385,9 @@ p { margin: 0 0 0.6em; }
 
 /* ---------- Small screens ---------- */
 @media (max-width: 760px) {
+  .level-seg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .level-seg button:nth-child(3) { border-left: 0; }
+  .level-seg button:nth-child(n+3) { border-top: 2px solid var(--blue); }
   body { font-size: 18px; }
   .home-grid, .two-col { grid-template-columns: 1fr; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -376,9 +395,7 @@ p { margin: 0 0 0.6em; }
   .hero h1 { font-size: 2.4rem; }
 }
 @media (max-width: 520px) {
-  .level-seg { grid-template-columns: 1fr; }
-  .level-seg button { border-left: 0; border-top: 2px solid var(--blue); min-height: 56px; }
-  .level-seg button:first-child { border-top: 0; }
+  .level-seg button { min-height: 56px; padding: 10px 12px; }
   .top-inner { flex-wrap: nowrap; padding-block: 8px; }
   .brand-name { display: none; }
   .cd-long { display: none; }

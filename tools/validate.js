@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..');
 const ctx = { window: {}, console };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/data/vocab.js', 'js/data/hoeren.js', 'js/data/lesen.js', 'js/data/grammatik.js', 'js/data/schreiben.js', 'js/data/sprechen.js', 'js/data/a12.js', 'js/util.js', 'js/bank.js']
+['js/data/vocab.js', 'js/data/hoeren.js', 'js/data/lesen.js', 'js/data/grammatik.js', 'js/data/schreiben.js', 'js/data/sprechen.js', 'js/data/a12.js', 'js/data/a2.js', 'js/data/uebungen.js', 'js/util.js', 'js/bank.js']
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
 const { entries } = ctx.A1.bank;
@@ -22,7 +22,7 @@ entries.forEach((e) => {
   ids.add(e.id);
   counts[e.skill] = (counts[e.skill] || 0) + 1;
   levels[e.level] = (levels[e.level] || 0) + 1;
-  if (!['A1.1', 'A1.2', 'all'].includes(e.level)) problems.push(`${e.id}: bad level ${e.level}`);
+  if (!['A1.1', 'A1.2', 'A2.1', 'A2.2', 'all'].includes(e.level)) problems.push(`${e.id}: bad level ${e.level}`);
   for (let run = 0; run < 15; run++) {
     let it;
     try { it = e.make(); } catch (err) { problems.push(`${e.id}: make() threw ${err.message}`); break; }
@@ -34,8 +34,10 @@ entries.forEach((e) => {
       else if (new Set(it.options).size !== it.options.length) problems.push(`${e.id}: duplicate options ${JSON.stringify(it.options)}`);
       if (typeof it.answer !== 'number' || !(it.answer in it.options)) problems.push(`${e.id}: bad answer index`);
       if (it.options && it.options.some((o) => o == null || o === '' || /undefined|NaN/.test(String(o)))) problems.push(`${e.id}: empty option ${JSON.stringify(it.options)}`);
-      if (it.options && it.options.length < 3 && !it.ads) problems.push(`${e.id}: only ${it.options.length} options ${JSON.stringify(it.options)}`);
+      if (it.options && it.options.length < 3 && !it.ads && !it.pair) problems.push(`${e.id}: only ${it.options.length} options ${JSON.stringify(it.options)}`);
     }
+    if (it.type === 'gap' && (!Array.isArray(it.accepted) || !it.accepted.length || !it.q.includes('___'))) problems.push(`${e.id}: bad gap item`);
+    if (it.type === 'speak' && !it.model) problems.push(`${e.id}: speaking card without model answer`);
     if (it.type === 'tf' && typeof it.answer !== 'boolean') problems.push(`${e.id}: tf answer not boolean`);
     if (it.audio && it.audio.some(([, t]) => /undefined|NaN/.test(t))) problems.push(`${e.id}: bad audio text`);
     if (it.type === 'order' && it.tokens.join(' ') === it.answer.join(' ') && it.answer.length > 2) problems.push(`${e.id}: tokens not shuffled`);
