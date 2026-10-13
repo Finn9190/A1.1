@@ -9,17 +9,20 @@ const root = path.join(__dirname, '..');
 const ctx = { window: {}, console };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/data/vocab.js', 'js/data/hoeren.js', 'js/data/lesen.js', 'js/data/grammatik.js', 'js/data/schreiben.js', 'js/data/sprechen.js', 'js/util.js', 'js/bank.js']
+['js/data/vocab.js', 'js/data/hoeren.js', 'js/data/lesen.js', 'js/data/grammatik.js', 'js/data/schreiben.js', 'js/data/sprechen.js', 'js/data/a12.js', 'js/util.js', 'js/bank.js']
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
 const { entries } = ctx.A1.bank;
 const problems = [];
 const ids = new Set();
 const counts = {};
+const levels = {};
 entries.forEach((e) => {
   if (ids.has(e.id)) problems.push(`duplicate id ${e.id}`);
   ids.add(e.id);
   counts[e.skill] = (counts[e.skill] || 0) + 1;
+  levels[e.level] = (levels[e.level] || 0) + 1;
+  if (!['A1.1', 'A1.2', 'all'].includes(e.level)) problems.push(`${e.id}: bad level ${e.level}`);
   for (let run = 0; run < 15; run++) {
     let it;
     try { it = e.make(); } catch (err) { problems.push(`${e.id}: make() threw ${err.message}`); break; }
@@ -42,6 +45,7 @@ entries.forEach((e) => {
 const uniq = (a) => [...new Set(a)];
 console.log('Questions in the bank:', entries.length);
 console.log('By skill:', counts);
+console.log('By level:', levels);
 if (problems.length) {
   console.log(`\n${uniq(problems).length} problem(s):`);
   uniq(problems).slice(0, 60).forEach((p) => console.log(' -', p));

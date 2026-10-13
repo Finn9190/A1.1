@@ -6,7 +6,7 @@
   const main = document.getElementById('main');
 
   // ---------------- State ----------------
-  const defaults = () => ({ lang: 'en', examDate: '', stats: {}, agg: {}, seen: {}, mistakes: {}, days: {}, mocks: [], session: null, voiceURI: '', rate: 0.9 });
+  const defaults = () => ({ lang: 'en', examDate: '', stats: {}, agg: {}, seen: {}, mistakes: {}, days: {}, mocks: [], session: null, voiceURI: '', rate: 0.9, level: 'A1.1' });
   let S = load();
   function load() {
     try {
@@ -40,9 +40,12 @@
     return 1 - a.ok / a.n;
   }
   // Unseen questions first, weak topics more often, never the same group twice.
+  const LEVELS = ['A1.1', 'A1.2', 'both'];
+  const levelOk = (e) => S.level === 'both' || e.level === 'all' || e.level === S.level;
+  const levelLabel = (l) => (l === 'both' ? 'A1.1 + A1.2' : l);
   function choose(filter, n, exclude) {
     const ex = exclude || new Set();
-    const scored = A1.bank.entries.filter((e) => filter(e) && !ex.has(e.id))
+    const scored = A1.bank.entries.filter((e) => levelOk(e) && filter(e) && !ex.has(e.id))
       .map((e) => ({ e, s: Math.random() + (S.seen[e.id] ? 0 : 2) + weakness(e.topic) * 0.8 }))
       .sort((a, b) => b.s - a.s);
     const out = [];
@@ -54,7 +57,7 @@
     }
     return out;
   }
-  const dueMistakes = () => Object.keys(S.mistakes).filter((id) => A1.bank.byId[id])
+  const dueMistakes = () => Object.keys(S.mistakes).filter((id) => A1.bank.byId[id] && levelOk(A1.bank.byId[id]))
     .sort((a, b) => (S.mistakes[a].box - S.mistakes[b].box) || (S.mistakes[a].t - S.mistakes[b].t));
 
   function buildEntries(mode, arg) {
@@ -67,6 +70,8 @@
       });
       list = list.concat(take(choose((e) => (e.topic === 'zahlen' || e.topic === 'zeit') && e.skill !== 'sprechen', 1, taken)));
       list = list.concat(take(choose((e) => (e.skill === 'sprechen' && e.part >= 2) || (e.skill === 'schreiben' && e.part === 1), 1, taken)));
+      // Top up to 10 if a slot had nothing at this level
+      if (list.length < 10) list = list.concat(take(choose((e) => ['hoeren', 'lesen', 'wortschatz', 'grammatik'].includes(e.skill), 10 - list.length, taken)));
       // Bring back up to two earlier mistakes
       const due = dueMistakes().filter((id) => !taken.has(id)).slice(0, 2);
       due.forEach((id, i) => { list[i * 3] = A1.bank.byId[id]; });
@@ -82,7 +87,7 @@
   }
 
   function buildMock() {
-    const sec = (key, list) => list.map((e) => Object.assign(e.make(), { section: key }));
+    const sec = (key, list) => list.map((e) => Object.assign(e.make(), { section: key, level: e.level }));
     const hoeren = [1, 2, 3].flatMap((p) => choose((e) => e.skill === 'hoeren' && e.part === p, p === 1 ? 6 : p === 2 ? 4 : 5));
     const groups = uniq(A1.bank.entries.filter((e) => e.skill === 'lesen' && e.part === 1).map((e) => e.group));
     const pickedGroups = choose((e) => e.skill === 'lesen' && e.part === 1, 2).map((e) => e.group);
@@ -99,10 +104,10 @@
     SP.stop();
     let items;
     if (mode === 'mock') items = buildMock();
-    else items = buildEntries(mode, arg).map((e) => e.make());
+    else items = buildEntries(mode, arg).map((e) => Object.assign(e.make(), { level: e.level }));
     if (!items.length) { ui.msg = t('emptyPool'); render(); return; }
     S.session = {
-      mode, arg, items, i: 0, results: [], cur: null,
+      mode, arg, items, i: 0, results: [], cur: null, level: S.level,
       feedback: mode !== 'mock', maxPlays: mode === 'mock' ? 2 : null,
       introDone: {}, secStart: {}, started: Date.now(),
     };
@@ -123,6 +128,7 @@
     S.seen[item.id] = 1;
     bump('s:' + item.skill, score);
     bump('t:' + item.topic, score);
+    if (item.level && item.level !== 'all') bump('l:' + item.level, score);
     const d = today();
     S.days[d] = (S.days[d] || 0) + 1;
     if (score < 0.99) S.mistakes[item.id] = { box: 0, t: Date.now() };
@@ -173,6 +179,8 @@
 
   // ---------------- Header ----------------
   function renderHeader() {
+    const stamp = document.querySelector('.stamp');
+    if (stamp) stamp.textContent = S.level === 'both' ? 'A1' : S.level;
     document.getElementById('lang-en').setAttribute('aria-pressed', S.lang === 'en');
     document.getElementById('lang-de').setAttribute('aria-pressed', S.lang === 'de');
     document.documentElement.lang = S.lang;
@@ -220,8 +228,9 @@
         <span class="tile-meta">${a ? pct(a.ok, a.n) + ' %' : '–'}</span></button>`;
     }).join('');
     const chip = (k) => `<button type="button" class="chip" data-act="topic" data-arg="${k}">${esc(topicName(k))}</button>`;
-    const themeKeys = Object.keys(A1.TOPICS).filter((k) => !k.startsWith('g_'));
-    const gramKeys = Object.keys(A1.TOPICS).filter((k) => k.startsWith('g_'));
+    const hasItems = (k) => A1.bank.entries.filter((e) => e.topic === k && levelOk(e)).length >= 3;
+    const themeKeys = Object.keys(A1.TOPICS).filter((k) => !k.startsWith('g_') && hasItems(k));
+    const gramKeys = Object.keys(A1.TOPICS).filter((k) => k.startsWith('g_') && hasItems(k));
 
     return `
       ${ui.msg ? `<p class="note" role="status">${esc(ui.msg)}</p>` : ''}
@@ -235,6 +244,13 @@
           <p class="lead">${esc(t('homeLead'))}</p>
         </div>
         ${st ? `<p class="streak"><span aria-hidden="true">🔥</span> ${esc(t('streak', { n: st }))}</p>` : ''}
+      </section>
+      <section class="level-pick" aria-labelledby="level-h">
+        <h2 id="level-h" class="eyebrow">${esc(t('levelTitle'))}</h2>
+        <div class="level-seg" role="group" aria-labelledby="level-h">
+          ${LEVELS.map((l) => `<button type="button" data-act="level" data-arg="${l}" aria-pressed="${S.level === l}">
+            <span class="level-name">${esc(levelLabel(l))}</span><span class="level-sub">${esc(t('levelSub_' + l.replace('.', '')))}</span></button>`).join('')}
+        </div>
       </section>
 
       <div class="home-grid">
@@ -288,7 +304,7 @@
         <h3 class="eyebrow">${esc(t('grammarPoints'))}</h3>
         <div class="chips">${gramKeys.map(chip).join('')}</div>
       </section>
-      <p class="footnote">${esc(t('examInfo'))} · ${esc(t('bankSize', { n: A1.bank.entries.length }))}</p>`;
+      <p class="footnote">${esc(t('examInfo'))} · ${esc(t('bankSize', { n: A1.bank.entries.filter(levelOk).length }))}</p>`;
   }
 
   // ---------------- Quiz ----------------
@@ -543,7 +559,7 @@
         </div>
       </div>
       <article class="sheet question" aria-live="polite">
-        <div class="tags"><span class="chip-static skill-${it.skill}">${A1.SKILLS[it.skill].icon} ${esc(skillName(it.skill))}</span>${partChip}<span class="chip-static muted">${esc(topicName(it.topic))}</span></div>
+        <div class="tags"><span class="chip-static skill-${it.skill}">${A1.SKILLS[it.skill].icon} ${esc(skillName(it.skill))}</span>${partChip}<span class="chip-static muted">${esc(topicName(it.topic))}</span>${it.level && it.level !== 'all' ? `<span class="chip-static level-chip">${esc(it.level)}</span>` : ''}</div>
         <p class="task">${esc(L(it.task))}</p>
         ${it.audio ? audioBlock(it, cur, ss) : ''}
         ${it.type === 'type' || it.type === 'form' || it.type === 'write' || it.type === 'speak' ? (it.visual ? promptBlock({ visual: it.visual }) : '') : promptBlock(it)}
@@ -580,7 +596,7 @@
       const overall = Math.round(parts.reduce((a, x) => a + x.p, 0) / 4);
       overallMock = overall;
       if (!ss.saved && !ss.stoppedEarly) {
-        S.mocks.push({ t: Date.now(), total: overall, parts: Object.fromEntries(parts.map((x) => [x.k, x.p])) });
+        S.mocks.push({ t: Date.now(), total: overall, level: ss.level || 'A1.1', parts: Object.fromEntries(parts.map((x) => [x.k, x.p])) });
         ss.saved = true;
         save();
       }
@@ -626,7 +642,7 @@
       .map(({ k, a }) => (a ? barRow(topicName(k), pct(a.ok, a.n), `${pct(a.ok, a.n)} % · ${a.n}`) : barRowEmpty(topicName(k)))).join('');
     const mocks = S.mocks.slice().reverse().map((m) => {
       const d = new Date(m.t);
-      return `<li><span>${d.toLocaleDateString(S.lang === 'de' ? 'de-DE' : 'en-GB')}</span><strong class="${m.total >= 60 ? 'ok' : 'bad'}">${m.total} %</strong><span class="muted small">${['hoeren', 'lesen', 'schreiben', 'sprechen'].map((k) => `${A1.SKILLS[k].de} ${m.parts[k]} %`).join(' · ')}</span></li>`;
+      return `<li><span>${d.toLocaleDateString(S.lang === 'de' ? 'de-DE' : 'en-GB')}</span><span class="chip-static level-chip">${esc(levelLabel(m.level || 'A1.1'))}</span><strong class="${m.total >= 60 ? 'ok' : 'bad'}">${m.total} %</strong><span class="muted small">${['hoeren', 'lesen', 'schreiben', 'sprechen'].map((k) => `${A1.SKILLS[k].de} ${m.parts[k]} %`).join(' · ')}</span></li>`;
     }).join('');
     const voices = SP.voices;
     const code = exportCode();
@@ -638,7 +654,8 @@
         <div class="stat"><span class="stat-num">${dueMistakes().length}</span><span class="stat-label">${esc(t('mistakesTitle'))}</span></div>
       </section>
       <div class="two-col">
-        <section class="block"><h2>${esc(t('bySkillTitle'))}</h2><div class="bars">${skills}</div></section>
+        <section class="block"><h2>${esc(t('bySkillTitle'))}</h2><div class="bars">${skills}</div>
+          <h2 class="sub-h">${esc(t('byLevelTitle'))}</h2><div class="bars">${['A1.1', 'A1.2'].map((l) => { const a = S.agg['l:' + l]; return a ? barRow(l, pct(a.ok, a.n), `${pct(a.ok, a.n)} % · ${a.n}`) : barRowEmpty(l); }).join('')}</div></section>
         <section class="block"><h2>${esc(t('mockHistory'))}</h2>${mocks ? `<ul class="mock-list">${mocks}</ul>` : `<p class="muted">${esc(t('noData'))}</p>`}</section>
       </div>
       <section class="block"><h2>${esc(t('byTopicTitle'))}</h2><div class="bars">${topics}</div></section>
@@ -703,17 +720,17 @@
 
   // ---------------- Word cards ----------------
   function buildDeck(topic) {
-    const nouns = A1.nouns.filter((n) => !topic || n.topic === topic).map((n) => ({ de: `${n.art} ${n.word}`, en: n.en, emoji: n.emoji, extra: n.plural ? `die ${n.plural}` : '' }));
-    const verbs = A1.verbs.filter((v) => !topic || v.topic === topic).map((v) => {
+    const nouns = A1.nouns.filter((n) => levelOk(n) && (!topic || n.topic === topic)).map((n) => ({ de: `${n.art} ${n.word}`, en: n.en, emoji: n.emoji, extra: n.plural ? `die ${n.plural}` : '' }));
+    const verbs = A1.verbs.filter((v) => levelOk(v) && (!topic || v.topic === topic)).map((v) => {
       const f = A1.conjugate(v.inf);
       return { de: v.inf, en: v.en, emoji: '', extra: `ich ${f[0]}, du ${f[1]}, er ${f[2]}` };
     });
-    const adj = !topic || topic === 'alltag' ? A1.adjectives.map((a) => ({ de: a.word, en: a.en, emoji: '', extra: a.opp ? `↔ ${a.opp}` : '' })) : [];
+    const adj = !topic || topic === 'alltag' ? A1.adjectives.filter(levelOk).map((a) => ({ de: a.word, en: a.en, emoji: '', extra: a.opp ? `↔ ${a.opp}` : '' })) : [];
     return shuffle(nouns.concat(verbs, adj)).slice(0, 20);
   }
   function viewFlash() {
     const f = ui.flash;
-    const topics = Object.keys(A1.TOPICS).filter((k) => !k.startsWith('g_') && (A1.nouns.some((n) => n.topic === k) || A1.verbs.some((v) => v.topic === k)));
+    const topics = Object.keys(A1.TOPICS).filter((k) => !k.startsWith('g_') && (A1.nouns.some((n) => n.topic === k && levelOk(n)) || A1.verbs.some((v) => v.topic === k && levelOk(v))));
     const chips = `<div class="chips">${topics.map((k) => `<button type="button" class="chip ${f && f.topic === k ? 'is-on' : ''}" data-act="flashTopic" data-arg="${k}">${esc(topicName(k))}</button>`).join('')}</div>`;
     if (!f) return `<h1>${esc(t('flashTitle'))}</h1><p class="lead">${esc(t('flashPick'))}</p>${chips}<div class="row">${btn('home', t('backHome'), 'btn-ghost')}</div>`;
     if (!f.deck.length) {
@@ -796,6 +813,7 @@
   const acts = {
     home: () => { SP.stop(); ui.msg = null; go('home'); },
     lang: (el) => { S.lang = el.dataset.lang; save(); render(); },
+    level: (el) => { S.level = el.dataset.arg; ui.msg = null; save(); render(); },
     quick: () => { ui.msg = null; startSession('quick'); },
     mock: () => { ui.msg = null; startSession('mock'); },
     mistakes: () => { ui.msg = null; startSession('mistakes'); },

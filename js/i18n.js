@@ -27,6 +27,9 @@ A1.TOPICS = {
   termine: { en: 'Appointments & courses', de: 'Termine & Kurse' },
   wetter: { en: 'Weather & seasons', de: 'Wetter & Jahreszeiten' },
   gesundheit: { en: 'Body & health', de: 'Körper & Gesundheit' },
+  reisen: { en: 'Travel & holidays', de: 'Reisen & Urlaub' },
+  feste: { en: 'Celebrations', de: 'Feste & Feiern' },
+  amt: { en: 'Offices, bank & post', de: 'Ämter, Bank & Post' },
   g_fragen: { en: 'Question words', de: 'W-Fragen' },
   g_verben: { en: 'Verbs (present tense)', de: 'Verben im Präsens' },
   g_seinhaben: { en: 'sein & haben', de: 'sein & haben' },
@@ -41,6 +44,12 @@ A1.TOPICS = {
   g_praep: { en: 'am, um, im, in, nach …', de: 'am, um, im, in, nach …' },
   g_satzbau: { en: 'Word order', de: 'Satzbau' },
   g_imperativ: { en: 'Requests (imperative)', de: 'Imperativ' },
+  g_perfekt: { en: 'Perfect tense (Perfekt)', de: 'Perfekt' },
+  g_praeteritum: { en: 'war & hatte', de: 'war & hatte' },
+  g_dativ: { en: 'Dative (dem, der, mir …)', de: 'Dativ (dem, der, mir …)' },
+  g_wechsel: { en: 'Wo? / Wohin? (in, auf, an …)', de: 'Wechselpräpositionen' },
+  g_komparativ: { en: 'Comparing (größer, besser)', de: 'Komparativ' },
+  g_konj: { en: 'und, aber, oder, denn', de: 'und, aber, oder, denn' },
 };
 
 A1.SECTIONS = {
@@ -52,6 +61,11 @@ A1.SECTIONS = {
 
 A1.I18N = {
   en: {
+    levelTitle: 'Which level do you want to practise?',
+    levelSub_A11: 'First half of A1: basics',
+    levelSub_A12: 'Second half: Perfekt, Dativ, travel, health',
+    levelSub_both: 'Everything mixed – like the full A1 exam',
+    byLevelTitle: 'By level',
     hello: 'Hello!',
     homeLead: 'Practise a little every day. Every round brings new questions.',
     quickTitle: '10 new questions',
@@ -193,9 +207,14 @@ A1.I18N = {
     emptyPool: 'No questions for this choice yet.',
     lastMock: 'Last mock exam: {p} %',
     mic: 'Microphone',
-    examInfo: 'Modelled on the Goethe "Start Deutsch 1" (A1) exam.',
+    examInfo: 'Modelled on the Goethe "Start Deutsch 1" (A1) exam. A1.1 and A1.2 are the two halves of A1.',
   },
   de: {
+    levelTitle: 'Welches Niveau möchten Sie üben?',
+    levelSub_A11: 'Erste Hälfte von A1: Grundlagen',
+    levelSub_A12: 'Zweite Hälfte: Perfekt, Dativ, Reisen, Gesundheit',
+    levelSub_both: 'Alles gemischt – wie die ganze A1-Prüfung',
+    byLevelTitle: 'Nach Niveau',
     hello: 'Guten Tag!',
     homeLead: 'Üben Sie jeden Tag ein bisschen. Jede Runde bringt neue Fragen.',
     quickTitle: '10 neue Fragen',
@@ -337,6 +356,6 @@ A1.I18N = {
     emptyPool: 'Für diese Auswahl gibt es noch keine Fragen.',
     lastMock: 'Letzte Probeprüfung: {p} %',
     mic: 'Mikrofon',
-    examInfo: 'Nach dem Vorbild der Prüfung „Start Deutsch 1“ (A1) vom Goethe-Institut.',
+    examInfo: 'Nach dem Vorbild der Prüfung „Start Deutsch 1“ (A1) vom Goethe-Institut. A1.1 und A1.2 sind die zwei Hälften von A1.',
   },
 };

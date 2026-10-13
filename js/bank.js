@@ -40,7 +40,8 @@ window.A1 = window.A1 || {};
   };
 
   const entries = [];
-  const add = (id, skill, topic, make, extra) => entries.push(Object.assign({ id, skill, topic, make }, extra || {}));
+  let LEVEL = 'A1.1';
+  const add = (id, skill, topic, make, extra) => entries.push(Object.assign({ id, skill, topic, make, level: LEVEL }, extra || {}));
 
   // Shuffle options of a "first option is right" list into {options, answer}
   function mcFromFirst(opts) {
@@ -52,51 +53,76 @@ window.A1 = window.A1 || {};
     return mcFromFirst([correct].concat(uniq(distractors.filter((d) => d !== correct)).slice(0, 2)));
   }
 
-  // ---------------- Static items ----------------
-  A1.HOEREN.forEach((h) => add(h.id, 'hoeren', h.topic, () => {
-    const base = { id: h.id, skill: 'hoeren', topic: h.topic, part: h.part, audio: h.audio, q: h.q, ex: h.ex };
-    if (h.type === 'tf') return Object.assign(base, { type: 'tf', task: TASK.hoerenTf, answer: h.answer });
-    const ordered = [h.options[h.answer]].concat(h.options.filter((_, i) => i !== h.answer));
-    return Object.assign(base, { type: 'mc', task: TASK.hoerenMc }, mcFromFirst(ordered));
-  }, { part: h.part }));
+  // ---------------- Static items (one set per level) ----------------
+  function buildStatic(D, pfx) {
+    D.HOEREN.forEach((h) => add(h.id, 'hoeren', h.topic, () => {
+      const base = { id: h.id, skill: 'hoeren', topic: h.topic, part: h.part, audio: h.audio, q: h.q, ex: h.ex };
+      if (h.type === 'tf') return Object.assign(base, { type: 'tf', task: TASK.hoerenTf, answer: h.answer });
+      const ordered = [h.options[h.answer]].concat(h.options.filter((_, i) => i !== h.answer));
+      return Object.assign(base, { type: 'mc', task: TASK.hoerenMc }, mcFromFirst(ordered));
+    }, { part: h.part }));
 
-  A1.LESEN.forEach((l) => add(l.id, 'lesen', l.topic, () => {
-    const base = { id: l.id, skill: 'lesen', topic: l.topic, part: l.part, text: l.text, kind: l.kind, q: l.q, ex: l.ex };
-    if (l.type === 'tf') return Object.assign(base, { type: 'tf', task: TASK.lesenTf, answer: l.answer });
-    // ads keep their a/b order
-    return Object.assign(base, { type: 'mc', ads: true, task: TASK.lesenAd, options: l.options, answer: l.answer });
-  }, { part: l.part, group: l.part === 1 ? l.id.replace(/-\d+$/, '') : null }));
+    D.LESEN.forEach((l) => add(l.id, 'lesen', l.topic, () => {
+      const base = { id: l.id, skill: 'lesen', topic: l.topic, part: l.part, text: l.text, kind: l.kind, q: l.q, ex: l.ex };
+      if (l.type === 'tf') return Object.assign(base, { type: 'tf', task: TASK.lesenTf, answer: l.answer });
+      // ads keep their a/b order
+      return Object.assign(base, { type: 'mc', ads: true, task: TASK.lesenAd, options: l.options, answer: l.answer });
+    }, { part: l.part, group: l.part === 1 ? l.id.replace(/-\d+$/, '') : null }));
 
-  A1.GRAMMAR.forEach(([topic, q, opts, en, de], i) => add(`g-${i}`, 'grammatik', topic, () => Object.assign(
-    { id: `g-${i}`, skill: 'grammatik', topic, type: 'mc', task: TASK.gap, q, ex: { en, de } }, mcFromFirst(opts))));
+    D.GRAMMAR.forEach(([topic, q, opts, en, de], i) => add(`${pfx}g-${i}`, 'grammatik', topic, () => Object.assign(
+      { id: `${pfx}g-${i}`, skill: 'grammatik', topic, type: 'mc', task: TASK.gap, q, ex: { en, de } }, mcFromFirst(opts))));
 
-  A1.PHRASES.forEach(([topic, sEn, sDe, opts], i) => add(`p-${i}`, 'wortschatz', topic, () => Object.assign(
-    { id: `p-${i}`, skill: 'wortschatz', topic, type: 'mc', task: TASK.phrase, situation: { en: sEn, de: sDe },
-      ex: { en: `"${opts[0]}" is the right thing to say here.`, de: `Hier sagt man: „${opts[0]}“` } }, mcFromFirst(opts))));
+    D.PHRASES.forEach(([topic, sEn, sDe, opts], i) => add(`${pfx}p-${i}`, 'wortschatz', topic, () => Object.assign(
+      { id: `${pfx}p-${i}`, skill: 'wortschatz', topic, type: 'mc', task: TASK.phrase, situation: { en: sEn, de: sDe },
+        ex: { en: `"${opts[0]}" is the right thing to say here.`, de: `Hier sagt man: „${opts[0]}“` } }, mcFromFirst(opts))));
 
-  A1.SENTENCES.forEach((s, i) => add(`o-${i}`, 'grammatik', 'g_satzbau', () => {
-    const words = s.de.replace(/[.?!]$/, '').split(' ');
-    const end = s.de.slice(-1);
-    let tokens = shuffle(words);
-    while (tokens.join(' ') === words.join(' ')) tokens = shuffle(words);
-    return { id: `o-${i}`, skill: 'grammatik', topic: 'g_satzbau', type: 'order', task: TASK.order, tokens, answer: words, end, hint: s.en,
-      ex: { en: `Meaning: ${s.en}. Remember: the verb is in position 2 (or position 1 in a yes/no question).`, de: 'Das Verb steht auf Position 2 (bei Ja/Nein-Fragen auf Position 1).' } };
-  }));
+    D.SENTENCES.forEach((s, i) => add(`${pfx}o-${i}`, 'grammatik', 'g_satzbau', () => {
+      const words = s.de.replace(/[.?!]$/, '').split(' ');
+      const end = s.de.slice(-1);
+      let tokens = shuffle(words);
+      while (tokens.join(' ') === words.join(' ')) tokens = shuffle(words);
+      return { id: `${pfx}o-${i}`, skill: 'grammatik', topic: 'g_satzbau', type: 'order', task: TASK.order, tokens, answer: words, end, hint: s.en,
+        ex: { en: `Meaning: ${s.en}. Remember: the verb is in position 2 (or position 1 in a yes/no question).`, de: 'Das Verb steht auf Position 2 (bei Ja/Nein-Fragen auf Position 1).' } };
+    }));
 
-  A1.FORMS.forEach((f) => add(f.id, 'schreiben', f.topic, () => ({
-    id: f.id, skill: 'schreiben', topic: f.topic, part: 1, type: 'form', task: TASK.form, title: f.title, text: f.text,
-    fields: f.fields.map(([label, accepted]) => ({ label, accepted })),
-    ex: { en: 'Copy names and numbers exactly from the text.', de: 'Schreiben Sie Namen und Zahlen genau wie im Text.' },
-  }), { part: 1 }));
+    D.FORMS.forEach((f) => add(f.id, 'schreiben', f.topic, () => ({
+      id: f.id, skill: 'schreiben', topic: f.topic, part: 1, type: 'form', task: TASK.form, title: f.title, text: f.text,
+      fields: f.fields.map(([label, accepted]) => ({ label, accepted })),
+      ex: { en: 'Copy names and numbers exactly from the text.', de: 'Schreiben Sie Namen und Zahlen genau wie im Text.' },
+    }), { part: 1 }));
 
-  const GREET = { de: 'Anrede (z. B. Liebe …, Sehr geehrte …)', en: 'Greeting (e.g. Liebe …, Sehr geehrte …)', kw: 'liebe|lieber|hallo|sehr geehrte|guten tag|hi ' };
-  const CLOSE = { de: 'Gruß am Ende (z. B. Viele Grüße)', en: 'Sign-off (e.g. Viele Grüße)', kw: 'grüße|grüsse|gruß|gruss|bis bald|bis dann|bis morgen|bis samstag|bis freitag|tschüss|danke' };
-  A1.MESSAGES.forEach((m) => add(m.id, 'schreiben', m.topic, () => ({
-    id: m.id, skill: 'schreiben', topic: m.topic, part: 2, type: 'write', task: TASK.write, situation: m.situation,
-    points: m.points, extraPoints: [GREET, CLOSE], model: m.model,
-    ex: { en: 'Compare your text with the example. Small mistakes are okay – the examiners want to see that you covered all three points.', de: 'Vergleichen Sie mit dem Beispiel. Kleine Fehler sind okay – wichtig sind alle drei Punkte.' },
-  }), { part: 2 }));
+    const GREET = { de: 'Anrede (z. B. Liebe …, Sehr geehrte …)', en: 'Greeting (e.g. Liebe …, Sehr geehrte …)', kw: 'liebe|lieber|hallo|sehr geehrte|guten tag|hi ' };
+    const CLOSE = { de: 'Gruß am Ende (z. B. Viele Grüße)', en: 'Sign-off (e.g. Viele Grüße)', kw: 'grüße|grüsse|gruß|gruss|bis bald|bis dann|bis morgen|bis samstag|bis freitag|tschüss|danke' };
+    D.MESSAGES.forEach((m) => add(m.id, 'schreiben', m.topic, () => ({
+      id: m.id, skill: 'schreiben', topic: m.topic, part: 2, type: 'write', task: TASK.write, situation: m.situation,
+      points: m.points, extraPoints: [GREET, CLOSE], model: m.model,
+      ex: { en: 'Compare your text with the example. Small mistakes are okay – the examiners want to see that you covered all three points.', de: 'Vergleichen Sie mit dem Beispiel. Kleine Fehler sind okay – wichtig sind alle drei Punkte.' },
+    }), { part: 2 }));
 
+    D.TOPIC_CARDS.forEach(([topic, theme, word, exQ, exA, kw], i) => add(`${pfx}sp2-${i}`, 'sprechen', topic, () => ({
+      id: `${pfx}sp2-${i}`, skill: 'sprechen', topic, part: 2, type: 'speak', mode: 'topic', task: TASK.topicCard, theme, word,
+      points: [
+        { de: `Frage mit „${word}“`, en: `A question with "${word}"`, kw },
+        { de: 'Antwort im ganzen Satz', en: 'An answer in a full sentence', kw: 'ich |wir |mein|meine|ja|nein' },
+      ],
+      model: `${exQ} – ${exA}`,
+      ex: { en: 'Start your question with a W-word (Was, Wo, Wann …) or with the verb (Hast du …?).', de: 'Fragen Sie mit einem W-Wort oder mit dem Verb am Anfang.' },
+    }), { part: 2 }));
+    D.REQUEST_CARDS.forEach(([topic, emoji, word, example, kw], i) => add(`${pfx}sp3-${i}`, 'sprechen', topic, () => ({
+      id: `${pfx}sp3-${i}`, skill: 'sprechen', topic, part: 3, type: 'speak', mode: 'request', task: TASK.requestCard, emoji, word,
+      points: [{ de: '„bitte“', en: '"bitte"', kw: 'bitte' }, { de: `„${word}“`, en: `"${word}"`, kw }],
+      model: example,
+      ex: { en: 'Polite requests: "Können Sie bitte …?", "Kannst du mir bitte … geben?", "… , bitte!"', de: 'Bitten: „Können Sie bitte …?“, „Kannst du mir bitte … geben?“' },
+    }), { part: 3 }));
+  }
+
+  LEVEL = 'A1.1';
+  buildStatic(A1, '');
+  LEVEL = 'A1.2';
+  buildStatic(A1.A12, '2');
+
+  // Speaking part 1 is the same at both levels
+  LEVEL = 'all';
   add(A1.INTRO.id, 'sprechen', 'person', () => ({
     id: A1.INTRO.id, skill: 'sprechen', topic: 'person', part: 1, type: 'speak', mode: 'intro', task: TASK.intro,
     points: A1.INTRO.points, model: A1.INTRO.model,
@@ -106,21 +132,7 @@ window.A1 = window.A1 || {};
     id: x.id, skill: 'sprechen', topic: x.topic, part: 1, type: 'speak', mode: 'extra', task: x.task, points: [], model: x.model,
     ex: { en: 'The examiner often asks you to spell your name or say a number after your introduction.', de: 'Oft fragt die Prüferin nach dem Buchstabieren oder einer Nummer.' },
   }), { part: 1 }));
-  A1.TOPIC_CARDS.forEach(([topic, theme, word, exQ, exA, kw], i) => add(`sp2-${i}`, 'sprechen', topic, () => ({
-    id: `sp2-${i}`, skill: 'sprechen', topic, part: 2, type: 'speak', mode: 'topic', task: TASK.topicCard, theme, word,
-    points: [
-      { de: `Frage mit „${word}“`, en: `A question with "${word}"`, kw },
-      { de: 'Antwort im ganzen Satz', en: 'An answer in a full sentence', kw: 'ich |wir |mein|meine|ja|nein' },
-    ],
-    model: `${exQ} – ${exA}`,
-    ex: { en: 'Start your question with a W-word (Was, Wo, Wann …) or with the verb (Hast du …?).', de: 'Fragen Sie mit einem W-Wort oder mit dem Verb am Anfang.' },
-  }), { part: 2 }));
-  A1.REQUEST_CARDS.forEach(([topic, emoji, word, example, kw], i) => add(`sp3-${i}`, 'sprechen', topic, () => ({
-    id: `sp3-${i}`, skill: 'sprechen', topic, part: 3, type: 'speak', mode: 'request', task: TASK.requestCard, emoji, word,
-    points: [{ de: '„bitte“', en: '"bitte"', kw: 'bitte' }, { de: `„${word}“`, en: `"${word}"`, kw }],
-    model: example,
-    ex: { en: 'Polite requests: "Können Sie bitte …?", "Kannst du mir bitte … geben?", "… , bitte!"', de: 'Bitten: „Können Sie bitte …?“, „Kannst du mir bitte … geben?“' },
-  }), { part: 3 }));
+  LEVEL = 'A1.1';
 
   // ---------------- Templates from the vocabulary ----------------
   const ARTS = ['der', 'die', 'das'];
@@ -139,6 +151,7 @@ window.A1 = window.A1 || {};
 
   A1.nouns.forEach((n) => {
     const k = nounKey(n);
+    LEVEL = n.level;
     add(`art-${k}`, 'grammatik', 'g_artikel', () => {
       const tip = articleTip(n);
       return { id: `art-${k}`, skill: 'grammatik', topic: 'g_artikel', type: 'mc', task: TASK.article, visual: n.emoji, q: `___ ${n.word}`, hintText: n.en,
@@ -177,6 +190,7 @@ window.A1 = window.A1 || {};
   const INDEF = { der: 'einen', die: 'eine', das: 'ein' };
   A1.nouns.filter((n) => AKK_TOPICS[n.topic] && n.plural && !AKK_SKIP.has(n.word)).forEach((n) => {
     const k = nounKey(n);
+    LEVEL = n.level;
     add(`akk-${k}`, 'grammatik', 'g_akkusativ', () => {
       const verb = pick(AKK_TOPICS[n.topic]);
       return { id: `akk-${k}`, skill: 'grammatik', topic: 'g_akkusativ', type: 'mc', task: TASK.gap, visual: n.emoji,
@@ -189,6 +203,7 @@ window.A1 = window.A1 || {};
   const PRON = { der: 'Er', die: 'Sie', das: 'Es' };
   A1.nouns.filter((n) => ['familie', 'wohnen', 'einkaufen', 'essen', 'stadt'].includes(n.topic) && n.plural).forEach((n) => {
     const k = nounKey(n);
+    LEVEL = n.level;
     add(`pr-${k}`, 'grammatik', 'g_pronomen', () => ({
       id: `pr-${k}`, skill: 'grammatik', topic: 'g_pronomen', type: 'mc', task: TASK.pronoun, visual: n.emoji,
       q: `Wo ist ${n.art} ${n.word}? – ___ ist hier.`, options: ['Er', 'Sie', 'Es'], answer: ['Er', 'Sie', 'Es'].indexOf(PRON[n.art]), fixed: true,
@@ -204,6 +219,7 @@ window.A1 = window.A1 || {};
   ];
   A1.nouns.filter((n) => n.topic === 'familie').forEach((n) => {
     const k = nounKey(n);
+    LEVEL = n.level;
     add(`pos-${k}`, 'grammatik', 'g_possessiv', () => {
       const p = pick(POSS);
       const right = n.art === 'die' ? p.f : p.m;
@@ -225,6 +241,7 @@ window.A1 = window.A1 || {};
   A1.conjugate = conjugate;
   A1.verbs.forEach((v) => {
     const k = v.inf.replace(/[^a-zäöüß]/g, '');
+    LEVEL = v.level;
     add(`konj-${k}`, 'grammatik', 'g_verben', () => {
       const forms = conjugate(v.inf);
       const p = rand(6);
@@ -238,12 +255,13 @@ window.A1 = window.A1 || {};
       mcWith(right, sample(others, 2)));
     });
     add(`vb-${k}`, 'wortschatz', v.topic, () => {
-      const d = sample(A1.verbs.filter((x) => x.inf !== v.inf), 2).map((x) => x.en);
+      const d = sample(uniq(A1.verbs.filter((x) => x.en !== v.en).map((x) => x.en)), 2);
       return Object.assign({ id: `vb-${k}`, skill: 'wortschatz', topic: v.topic, type: 'mc', task: TASK.verbMeaning, q: v.inf,
         ex: { en: `${v.inf} = ${v.en}`, de: `${v.inf} = ${v.en}` } }, mcWith(v.en, d));
     });
   });
 
+  LEVEL = 'A1.1';
   // Separable verbs: "Ich stehe um 7 Uhr auf."
   const SEP_REST = { aufstehen: 'um sieben Uhr', einkaufen: 'am Samstag im Supermarkt', anrufen: 'morgen meine Mutter', fernsehen: 'am Abend', aufräumen: 'heute die Küche', mitkommen: 'heute ins Kino', ankommen: 'um 18 Uhr in Berlin', abholen: 'die Kinder um 16 Uhr', anfangen: 'um acht Uhr mit der Arbeit', zumachen: 'das Fenster', aufmachen: 'die Tür' };
   A1.SEPARABLE.forEach(([inf, prefix, ich, er, en]) => {
@@ -261,6 +279,7 @@ window.A1 = window.A1 || {};
 
   // Adjectives
   A1.adjectives.filter((a) => a.opp).forEach((a) => {
+    LEVEL = a.level;
     add(`opp-${a.word}`, 'wortschatz', 'alltag', () => {
       const d = sample(A1.adjectives.filter((x) => x.word !== a.word && x.word !== a.opp).map((x) => x.word), 2);
       return Object.assign({ id: `opp-${a.word}`, skill: 'wortschatz', topic: 'alltag', type: 'mc', task: TASK.opposite, q: `${a.word} ↔ ___`, hintText: a.en,
@@ -268,6 +287,7 @@ window.A1 = window.A1 || {};
     });
   });
 
+  LEVEL = 'A1.1';
   // ---------------- Number, time and date templates ----------------
   function numberDistractors(n) {
     const out = [];
@@ -450,6 +470,189 @@ window.A1 = window.A1 || {};
         ex: { en: `${name}: ${spelled}. Tricky letters: E (ee) – I (ee as in "see"), J = Jott, V = Fau, W = We, Y = Ypsilon, Z = Zett.`, de: `${name}: ${spelled}` } }, mcWith(name, d));
     });
   }
+
+
+  // ---------------- A1.2 templates ----------------
+  LEVEL = 'A1.2';
+  const T2 = {
+    perfekt: { en: 'Complete the sentence in the perfect tense (Perfekt).', de: 'Ergänzen Sie den Satz im Perfekt.' },
+    partizip: { en: 'What is the past participle (Partizip II)?', de: 'Wie heißt das Partizip II?' },
+    praet: { en: 'Choose the past form of sein or haben.', de: 'Wählen Sie die Vergangenheitsform von sein oder haben.' },
+    dativ: { en: 'Choose the right form (dative).', de: 'Wählen Sie die richtige Form (Dativ).' },
+    wo: { en: 'Where is it? (Wo? → dative)', de: 'Wo ist es? (Wo? → Dativ)' },
+    wohin: { en: 'Where to? (Wohin? → accusative)', de: 'Wohin? (Wohin? → Akkusativ)' },
+    pronDat: { en: 'Choose the right pronoun.', de: 'Wählen Sie das richtige Pronomen.' },
+    komp: { en: 'What is the comparative form?', de: 'Wie heißt der Komparativ?' },
+    imp: { en: 'Choose the right command form (imperative).', de: 'Wählen Sie den richtigen Imperativ.' },
+    colour: { en: 'Which colour is it?', de: 'Welche Farbe ist das?' },
+  };
+  Object.assign(TASK, T2);
+  const SUBJ = [['Ich', 0], ['Du', 1], ['Er', 2], ['Maria', 2], ['Wir', 3], ['Ihr', 4]];
+  const HABEN = A1.IRREGULAR.haben, SEIN = A1.IRREGULAR.sein;
+
+  A1.PERFEKT.forEach((v) => {
+    const k = v.inf.replace(/[^a-zäöüß]/g, '');
+    add(`perf-${k}`, 'grammatik', 'g_perfekt', () => {
+      const [subj, pi] = pick(SUBJ);
+      const auxRight = (v.aux === 'sein' ? SEIN : HABEN)[pi];
+      const auxWrong = (v.aux === 'sein' ? HABEN : SEIN)[pi];
+      const shown = subj.replace(' (Maria)', '');
+      return Object.assign({ id: `perf-${k}`, skill: 'grammatik', topic: 'g_perfekt', type: 'mc', task: TASK.perfekt,
+        q: `${shown} ___ ${v.rest} ___.`, hintText: `${v.inf} – ${v.en}`,
+        ex: { en: `${v.inf} → ${v.aux === 'sein' ? 'sein' : 'haben'} + ${v.part}: ${shown} ${auxRight} ${v.rest} ${v.part}.${v.aux === 'sein' ? ' Verbs of movement or change (gehen, fahren, aufstehen …) use sein.' : ''}`,
+          de: `${v.inf} → Perfekt mit ${v.aux}: ${shown} ${auxRight} ${v.rest} ${v.part}.` } },
+      mcFromFirst([`${auxRight} … ${v.part}`, `${auxWrong} … ${v.part}`, v.part !== v.inf ? `${auxRight} … ${v.inf}` : `${auxRight} … ge${v.inf.replace(/e?n$/, '')}t`]));
+    });
+    add(`part-${k}`, 'grammatik', 'g_perfekt', () => {
+      const stem = v.inf.replace(/e?n$/, '');
+      const fakes = uniq([`ge${stem}t`, `ge${v.inf}`, `ge${stem}en`, v.inf]).filter((f) => f !== v.part);
+      return Object.assign({ id: `part-${k}`, skill: 'grammatik', topic: 'g_perfekt', type: 'mc', task: TASK.partizip,
+        q: `${v.inf} → ${v.aux === 'sein' ? 'ich bin' : 'ich habe'} ___`, hintText: v.en,
+        ex: { en: `${v.inf} → ${v.part}.${/^(be|ver|er|ge|ent|zer|über)/.test(v.inf) && !v.part.startsWith('ge') ? ' Verbs starting with be-, ver-, er- … have no ge-.' : /ieren$/.test(v.inf) ? ' Verbs ending in -ieren have no ge-.' : ''}`, de: `${v.inf} → ${v.part}` } },
+      mcWith(v.part, sample(fakes, 2)));
+    });
+  });
+
+  // Präteritum of sein and haben
+  const PRAET = { sein: ['war', 'warst', 'war', 'waren', 'wart', 'waren'], haben: ['hatte', 'hattest', 'hatte', 'hatten', 'hattet', 'hatten'] };
+  const PRAET_REST = {
+    sein: ['gestern krank', 'letzte Woche in Berlin', 'am Wochenende zu Hause', 'heute Morgen beim Arzt', 'im Sommer am Meer'],
+    haben: ['gestern keine Zeit', 'am Montag einen Termin', 'letzte Woche Fieber', 'als Kind einen Hund', 'im Urlaub schönes Wetter'],
+  };
+  for (let i = 0; i < 12; i++) {
+    add(`praet-${i}`, 'grammatik', 'g_praeteritum', () => {
+      const verb = i % 2 ? 'haben' : 'sein';
+      const other = verb === 'sein' ? 'haben' : 'sein';
+      const [subj, pi] = pick(SUBJ);
+      const right = PRAET[verb][pi];
+      const sameVerbOther = pick(PRAET[verb].filter((f) => f !== right));
+      const shown = subj.replace(' (Maria)', '');
+      return Object.assign({ id: `praet-${i}`, skill: 'grammatik', topic: 'g_praeteritum', type: 'mc', task: TASK.praet,
+        q: `${shown} ___ ${pick(PRAET_REST[verb])}.`,
+        ex: { en: `${verb} in the past: ich ${PRAET[verb][0]}, du ${PRAET[verb][1]}, er/sie ${PRAET[verb][2]}, wir ${PRAET[verb][3]}, ihr ${PRAET[verb][4]}, sie ${PRAET[verb][5]}.`,
+          de: `${verb}: ich ${PRAET[verb][0]}, du ${PRAET[verb][1]}, er/sie ${PRAET[verb][2]}, wir ${PRAET[verb][3]}, ihr ${PRAET[verb][4]}, sie ${PRAET[verb][5]}` } },
+      mcWith(right, [sameVerbOther, PRAET[other][pi]]));
+    });
+  }
+
+  // Dative after mit / zu
+  const DAT = { der: 'dem', die: 'der', das: 'dem' };
+  const AKK = { der: 'den', die: 'die', das: 'das' };
+  const nounBy = (w) => A1.nouns.find((n) => n.word === w);
+  ['Bus', 'Zug', 'U-Bahn', 'Auto', 'Taxi', 'Fahrrad', 'Flugzeug'].forEach((w) => {
+    const n = nounBy(w); if (!n) return;
+    add(`mit-${nounKey(n)}`, 'grammatik', 'g_dativ', () => ({
+      id: `mit-${nounKey(n)}`, skill: 'grammatik', topic: 'g_dativ', type: 'mc', task: TASK.dativ, visual: n.emoji,
+      q: `Ich fahre mit ___ ${n.word}.`, options: ['dem', 'den', 'der'], answer: ['dem', 'den', 'der'].indexOf(DAT[n.art]), fixed: true,
+      ex: { en: `mit + dative: ${n.art} ${n.word} → mit ${DAT[n.art]} ${n.word}. der/das → dem, die → der.`, de: `mit + Dativ: mit ${DAT[n.art]} ${n.word}` } }));
+  });
+  ['Lehrerin', 'Arzt', 'Nachbarin', 'Chef', 'Kollegin', 'Vermieter', 'Mutter', 'Vater', 'Kind', 'Ärztin'].forEach((w) => {
+    const n = nounBy(w); if (!n) return;
+    add(`mitp-${nounKey(n)}`, 'grammatik', 'g_dativ', () => ({
+      id: `mitp-${nounKey(n)}`, skill: 'grammatik', topic: 'g_dativ', type: 'mc', task: TASK.dativ, visual: n.emoji,
+      q: `Ich spreche morgen mit ___ ${n.word}.`, options: ['dem', 'den', 'der'], answer: ['dem', 'den', 'der'].indexOf(DAT[n.art]), fixed: true,
+      ex: { en: `mit + dative: ${n.art} ${n.word} → mit ${DAT[n.art]} ${n.word}.`, de: `mit + Dativ: mit ${DAT[n.art]} ${n.word}` } }));
+  });
+  ['Arzt', 'Apotheke', 'Bank', 'Post', 'Bahnhof', 'Supermarkt', 'Bäckerei', 'Haltestelle', 'Krankenhaus', 'Schule', 'Arbeit', 'Zahnarzt'].forEach((w) => {
+    const n = nounBy(w); if (!n) return;
+    const right = n.art === 'die' ? 'zur' : 'zum';
+    add(`zu-${nounKey(n)}`, 'grammatik', 'g_dativ', () => ({
+      id: `zu-${nounKey(n)}`, skill: 'grammatik', topic: 'g_dativ', type: 'mc', task: TASK.dativ, visual: n.emoji,
+      q: `Ich gehe jetzt ___ ${n.word}.`, options: ['zum', 'zur', 'zu'], answer: ['zum', 'zur', 'zu'].indexOf(right), fixed: true,
+      ex: { en: `zu + dative: zu dem → zum (der/das), zu der → zur (die). ${n.art} ${n.word} → ${right} ${n.word}.`, de: `zu dem = zum, zu der = zur → ${right} ${n.word}` } }));
+  });
+
+  // Wechselpräpositionen: wo? (dative) / wohin? (accusative)
+  const WECHSEL = [
+    ['auf', 'Tisch', 'Das Buch liegt', 'Ich lege das Buch'], ['auf', 'Bett', 'Die Katze liegt', 'Die Katze springt'],
+    ['auf', 'Sofa', 'Die Tasche liegt', 'Ich lege die Tasche'], ['auf', 'Stuhl', 'Die Jacke liegt', 'Ich lege die Jacke'],
+    ['auf', 'Regal', 'Die Vase steht', 'Ich stelle die Vase'], ['auf', 'Schrank', 'Der Koffer liegt', 'Ich lege den Koffer'],
+    ['unter', 'Tisch', 'Der Hund schläft', 'Der Hund läuft'], ['unter', 'Bett', 'Die Schuhe stehen', 'Ich stelle die Schuhe'],
+    ['neben', 'Fenster', 'Die Pflanze steht', 'Ich stelle die Pflanze'], ['neben', 'Tür', 'Der Schrank steht', 'Wir stellen den Schrank'],
+    ['neben', 'Sofa', 'Die Lampe steht', 'Ich stelle die Lampe'], ['an', 'Wand', 'Das Bild hängt', 'Ich hänge das Bild'],
+    ['in', 'Küche', 'Die Kinder sind', 'Die Kinder gehen'], ['in', 'Dusche', 'Mein Mann ist', 'Mein Mann geht'],
+    ['über', 'Sofa', 'Der Spiegel hängt', 'Ich hänge den Spiegel'], ['vor', 'Haus', 'Das Auto steht', 'Ich stelle das Auto'],
+  ];
+  const ARTS_ALL = ['dem', 'der', 'den', 'die', 'das'];
+  const artOptions = (right, near) => mcWith(right, [near, pick(ARTS_ALL.filter((a) => a !== right && a !== near))]);
+  WECHSEL.forEach(([prep, w, woS, wohinS], i) => {
+    const n = nounBy(w); if (!n) return;
+    add(`wo-${i}`, 'grammatik', 'g_wechsel', () => ({
+      id: `wo-${i}`, skill: 'grammatik', topic: 'g_wechsel', type: 'mc', task: TASK.wo, visual: n.emoji,
+      q: `${woS} ${prep} ___ ${n.word}.`, ...artOptions(DAT[n.art], AKK[n.art]),
+      ex: { en: `Wo? (no movement) → dative: ${prep} ${DAT[n.art]} ${n.word}.`, de: `Wo? → Dativ: ${prep} ${DAT[n.art]} ${n.word}` } }));
+    add(`wohin-${i}`, 'grammatik', 'g_wechsel', () => ({
+      id: `wohin-${i}`, skill: 'grammatik', topic: 'g_wechsel', type: 'mc', task: TASK.wohin, visual: n.emoji,
+      q: `${wohinS} ${prep} ___ ${n.word}.`, ...artOptions(AKK[n.art], DAT[n.art]),
+      ex: { en: `Wohin? (movement to a place) → accusative: ${prep} ${AKK[n.art]} ${n.word}.`, de: `Wohin? → Akkusativ: ${prep} ${AKK[n.art]} ${n.word}` } }));
+  });
+
+  // Dative pronouns
+  const PRON_DAT = [['ich', 'mir', 'mich'], ['du', 'dir', 'dich'], ['er', 'ihm', 'ihn'], ['sie', 'ihr', 'sie'], ['wir', 'uns', 'uns'], ['ihr', 'euch', 'euch'], ['Sie', 'Ihnen', 'Sie']];
+  const PRON_FRAMES = ['Wie geht es ___? ({p})', 'Das Kleid gefällt ___ sehr. ({p})', 'Ich gebe ___ morgen das Buch. ({p})', 'Kannst du ___ bitte helfen? ({p})', 'Ich schenke ___ Blumen. ({p})', 'Der Kuchen schmeckt ___ gut. ({p})'];
+  for (let i = 0; i < 10; i++) {
+    add(`pdat-${i}`, 'grammatik', 'g_dativ', () => {
+      const frame = pick(PRON_FRAMES);
+      let row = pick(PRON_DAT);
+      if (frame.startsWith('Kannst du') && row[0] === 'du') row = PRON_DAT[0];
+      const others = PRON_DAT.filter((r) => r !== row).map((r) => r[1]);
+      const d = uniq([row[2] !== row[1] ? row[2] : pick(others)]);
+      while (d.length < 2) { const o = pick(others); if (!d.includes(o) && o !== row[1]) d.push(o); }
+      return Object.assign({ id: `pdat-${i}`, skill: 'grammatik', topic: 'g_dativ', type: 'mc', task: TASK.pronDat,
+        q: frame.replace('{p}', row[0]),
+        ex: { en: `Dative pronouns: mir, dir, ihm, ihr, uns, euch, Ihnen. ${row[0]} → ${row[1]}. Verbs like helfen, gefallen, schmecken, geben (to someone) use the dative.`,
+          de: `Dativ: mir, dir, ihm, ihr, uns, euch, Ihnen. ${row[0]} → ${row[1]}` } }, mcWith(row[1], d));
+    });
+  }
+
+  // Komparativ
+  A1.KOMPARATIV.forEach(([base, comp, sup]) => {
+    add(`komp-${base}`, 'grammatik', 'g_komparativ', () => {
+      const plain = base + 'er';
+      const d = uniq([plain !== comp ? plain : 'mehr ' + base, sup, 'mehr ' + base]).filter((x) => x !== comp);
+      return Object.assign({ id: `komp-${base}`, skill: 'grammatik', topic: 'g_komparativ', type: 'mc', task: TASK.komp,
+        q: `${base} → ___ als …`,
+        ex: { en: `${base} – ${comp} – ${sup}.`, de: `${base} – ${comp} – ${sup}` } }, mcWith(comp, sample(d, 2)));
+    });
+  });
+
+  // Imperativ du / ihr
+  const IMP = [
+    ['kommen', 'komm', 'bitte schnell!'], ['warten', 'warte', 'bitte kurz!'], ['sprechen', 'sprich', 'bitte lauter!'],
+    ['essen', 'iss', 'doch noch etwas!'], ['lesen', 'lies', 'bitte den Text!'], ['nehmen', 'nimm', 'doch ein Stück Kuchen!'],
+    ['geben', 'gib', 'mir bitte das Salz!'], ['helfen', 'hilf', 'mir bitte!'], ['fahren', 'fahr', 'bitte langsam!'],
+    ['machen', 'mach', 'bitte das Licht aus!'], ['trinken', 'trink', 'viel Wasser!'], ['kaufen', 'kauf', 'bitte Brot!'],
+  ];
+  IMP.forEach(([inf, duImp, rest]) => {
+    add(`imp-${inf}`, 'grammatik', 'g_imperativ', () => {
+      const forms = conjugate(inf);
+      const toDu = Math.random() < 0.6;
+      const right = toDu ? duImp : forms[4];
+      const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+      const opts = toDu ? [duImp, forms[1], inf] : [forms[4], duImp, inf];
+      return Object.assign({ id: `imp-${inf}`, skill: 'grammatik', topic: 'g_imperativ', type: 'mc', task: TASK.imp,
+        q: `___ ${rest} (${toDu ? 'du' : 'ihr'} – ${inf})`,
+        ex: { en: `du: ${cap(duImp)} ${rest} · ihr: ${cap(forms[4])} ${rest} The du-command has no -st and no "du".`, de: `du: ${cap(duImp)}! · ihr: ${cap(forms[4])}!` } },
+      mcFromFirst(uniq(opts.map(cap))));
+    });
+  });
+
+  // Colours
+  const COLOURS = [['rot', '🟥'], ['blau', '🟦'], ['grün', '🟩'], ['gelb', '🟨'], ['schwarz', '⬛'], ['weiß', '⬜'], ['braun', '🟫'], ['orange', '🟧']];
+  COLOURS.forEach(([c, sw]) => {
+    add(`farbe-${c}`, 'wortschatz', 'einkaufen', () => Object.assign({ id: `farbe-${c}`, skill: 'wortschatz', topic: 'einkaufen', type: 'mc', task: TASK.colour, visual: sw,
+      ex: { en: `${sw} = ${c}`, de: `${sw} = ${c}` } }, mcWith(c, sample(COLOURS.map((x) => x[0]).filter((x) => x !== c), 2))));
+  });
+
+  // Meaning of A1.2 adjectives
+  A1.adjectives.filter((a) => a.level === 'A1.2').forEach((a) => {
+    add(`adj-${a.word}`, 'wortschatz', 'alltag', () => {
+      const d = sample(A1.adjectives.filter((x) => x.word !== a.word && x.en !== a.en).map((x) => x.en), 2);
+      return Object.assign({ id: `adj-${a.word}`, skill: 'wortschatz', topic: 'alltag', type: 'mc', task: TASK.meaning, q: a.word,
+        ex: { en: `${a.word} = ${a.en}${a.opp ? ` (opposite: ${a.opp})` : ''}`, de: `${a.word} = ${a.en}` } }, mcWith(a.en, d));
+    });
+  });
+  LEVEL = 'A1.1';
 
   // ---------------- Public API ----------------
   const byId = {};

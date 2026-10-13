@@ -1,7 +1,7 @@
 {
-  "name": "A1.1 Deutsch-Trainer",
+  "name": "A1 Deutsch-Trainer",
   "short_name": "Deutsch A1",
-  "description": "Übungen für die Deutschprüfung A1.1",
+  "description": "Übungen für die Deutschprüfung A1.1 und A1.2",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

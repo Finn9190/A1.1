@@ -1,10 +1,17 @@
-# A1.1 Deutsch-Trainer
+# A1 Deutsch-Trainer (A1.1 + A1.2)
 
-A practice app for the German A1.1 exam. It runs in any browser on a computer, with no install and no account.
+A practice app for the German A1.1 and A1.2 exams. It runs in any browser on a computer, with no install and no account.
 
 The exam parts follow the Goethe-Institut **"Start Deutsch 1"** (A1) format: **Hören, Lesen, Schreiben, Sprechen**.
 
 ## What's inside
+
+- **Choose your level.** The start screen has three buttons:
+  - **A1.1**: the first half of A1. Basics, present tense, accusative, numbers, time.
+  - **A1.2**: the second half. Perfekt, war/hatte, dative, wo?/wohin?, dürfen/sollen/wollen, du/ihr commands, comparatives, und/aber/oder/denn. Topics include health, home and furniture, travel, clothes and colours, celebrations, and offices/bank/post.
+  - **A1.1 + A1.2**: both combined, like the full A1 exam.
+
+  Everything follows the chosen level: practice rounds, mock exams, mistake review, word cards and topics.
 
 - **10 new questions.** One click gives a fresh mixed round. The app shows questions she hasn't seen yet first, brings back weak topics more often, and repeats earlier mistakes.
 - **Mock exam (Probeprüfung).** A timed simulation of all four parts:
@@ -21,7 +28,7 @@ The exam parts follow the Goethe-Institut **"Start Deutsch 1"** (A1) format: **H
 - **English / German switch.** The button is always in the top bar. Instructions and explanations switch language; the exercises stay in German.
 - **Listening** uses the browser's German voice, so no audio files are needed. **Speaking** uses the microphone through speech recognition. It works best in Chrome or Edge.
 
-### Where the 1,600+ questions come from
+### Where the 2,500+ questions come from
 
 - About 300 are written by hand: listening dialogues, announcements and phone messages; reading emails, ads and signs; grammar gaps; set phrases; forms; writing tasks and speaking cards.
 - The rest are built from templates over the vocabulary list: der/die/das, plurals, meanings, typing words, accusative, er/sie/es, mein/dein/Ihr and verb forms.
@@ -61,6 +68,7 @@ All content is in plain JavaScript files in `js/data/`:
 | `grammatik.js` | Grammar gaps, set phrases and word-order sentences (the first option is the right one) |
 | `schreiben.js` | Forms and writing tasks |
 | `sprechen.js` | Speaking cards |
+| `a12.js` | All A1.2 content (vocabulary, Perfekt list, listening, reading, grammar, writing, speaking) |
 
 After editing, run the check:
 

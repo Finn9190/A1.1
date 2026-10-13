@@ -378,8 +378,8 @@ A1.SPELL_NAMES = ['Müller', 'Schmidt', 'Becker', 'Wagner', 'Yilmaz', 'Novak', '
 (function () {
   const lines = (s) => s.trim().split('\n').map((l) => l.split('|'));
   A1.nouns = lines(A1.NOUNS).map(([topic, art, word, plural, en, emoji]) => ({
-    topic, art, word, plural: plural === '-' ? null : plural, en, emoji,
+    topic, art, word, plural: plural === '-' ? null : plural, en, emoji, level: 'A1.1',
   }));
-  A1.verbs = lines(A1.VERBS).map(([topic, inf, en]) => ({ topic, inf, en }));
-  A1.adjectives = lines(A1.ADJECTIVES).map(([word, en, opp]) => ({ word, en, opp: opp || null }));
+  A1.verbs = lines(A1.VERBS).map(([topic, inf, en]) => ({ topic, inf, en, level: 'A1.1' }));
+  A1.adjectives = lines(A1.ADJECTIVES).map(([word, en, opp]) => ({ word, en, opp: opp || null, level: 'A1.1' }));
 })();

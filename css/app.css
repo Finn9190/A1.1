@@ -180,6 +180,18 @@ p { margin: 0 0 0.6em; }
 .chip:hover, .chip.is-on { border-color: var(--blue); color: var(--blue); }
 .chip.is-on { background: var(--blue-soft); font-weight: 700; }
 
+/* Level switch */
+.level-pick { margin-bottom: 22px; }
+.level-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px solid var(--blue); border-radius: var(--r); overflow: hidden; background: var(--sheet); }
+.level-seg button { display: grid; gap: 2px; text-align: left; padding: 12px 16px; border: 0; border-left: 2px solid var(--blue); background: var(--sheet); color: var(--ink); cursor: pointer; min-height: 64px; min-width: 0; }
+.level-seg button:first-child { border-left: 0; }
+.level-seg button:hover { background: var(--blue-soft); }
+.level-seg button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.level-name { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
+.level-sub { font-size: 0.85rem; opacity: 0.85; }
+.level-chip { background: var(--marker); color: var(--ink); }
+.sub-h { margin-top: 24px; }
+
 /* ---------- Quiz ---------- */
 .quiz-top { margin-bottom: 16px; }
 .progress-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -364,6 +376,9 @@ p { margin: 0 0 0.6em; }
   .hero h1 { font-size: 2.4rem; }
 }
 @media (max-width: 520px) {
+  .level-seg { grid-template-columns: 1fr; }
+  .level-seg button { border-left: 0; border-top: 2px solid var(--blue); min-height: 56px; }
+  .level-seg button:first-child { border-top: 0; }
   .top-inner { flex-wrap: nowrap; padding-block: 8px; }
   .brand-name { display: none; }
   .cd-long { display: none; }
