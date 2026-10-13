@@ -1,23 +1,25 @@
 # Prompt: German A1.1 exam trainer
 
 Copy everything below the line into Claude Code, Lovable, or any AI app builder.
-Before you send it, fill in the three `[...]` placeholders at the top.
+The app in this repository was built from this prompt.
 
 ---
 
 Build me a web app that helps my mother prepare for her **German A1.1 exam**.
 
 **About the learner**
-- Native language: **[e.g. Polish / Turkish / English]**. All instructions, hints and explanations go in this language. Exercise content stays in German.
+- Interface language: **English and German**. Put a toggle button in the top bar that is always visible, so she can switch without opening settings. Instructions and explanations change language; exercise content stays in German.
 - She is a beginner who isn't confident with technology. Keep the app simple, calm and encouraging.
-- Exam: **[e.g. A1.1 course final test at the Volkshochschule / Goethe "Start Deutsch 1" / telc A1]**. Exam date: **[date]**.
+- Exam: an A1.1 exam whose exact format isn't known. Model it on the Goethe "Start Deutsch 1" (A1) exam, the most common A1 format.
+- The exam is **within 4 weeks**, so focus on mock exams, weak spots and mistake review. Include a "plan for today" and a countdown to the exam date.
+- Device: mainly a **computer** (laptop or desktop with a keyboard); it should still work on a phone.
 
 ## 1. Core idea: fresh questions every time
 - Store a **large question bank** in JSON files, at least **400 questions** spread over all topics and skills below, so she doesn't keep seeing the same items.
 - Each session draws questions at random. Put this on the start screen: a big **"Neue Fragen / New questions"** button that reshuffles and loads a new set at any time.
 - **No repeats until exhausted:** remember which questions she has already seen (localStorage) and prefer unseen ones. Once she has seen them all, start the cycle again.
 - **Variation:** shuffle the answer options, and build some items from templates so they are effectively endless. Examples: random numbers or prices to write or understand, random clock times ("Es ist Viertel nach drei"), random dates, verb + person pairs to conjugate.
-- **Optional AI mode (make it easy to switch off):** a "Generate more questions" button that calls the Claude API with a strict JSON schema and a prompt asking for A1.1-level items on a chosen topic. Validate the generated items and add them to the local bank. The app must still work fully without an API key.
+- No AI generation and no API key: everything comes from the built-in bank and its templates, so the app works offline and costs nothing.
 
 ## 2. Content: what A1.1 covers
 **Topics (Themen):**
@@ -61,7 +63,7 @@ Use the vocabulary of the official Goethe A1 word list as a reference. Keep sent
    - Fill in a form, for example a hotel or registration form, from a short text.
    - Write a short message of about 30 words covering 3 given points. Show a model answer and a checklist so she can compare her text herself.
 4. **Wortschatz and Grammatik:** multiple choice, fill-in-the-gap (with a word bank as an easier option), matching word to picture or emoji, and putting words in the right order to make a sentence.
-5. **Sprechen (speaking practice):** show a prompt card, for example "Stellen Sie sich vor: Name, Alter, Land, Wohnort, Sprachen, Beruf, Hobby" or a topic card such as "Essen – Frühstück?". She answers out loud. If the browser supports it, use speech recognition. Otherwise she presses "show example answer" and rates herself.
+5. **Sprechen (speaking practice):** show a prompt card, for example "Stellen Sie sich vor: Name, Alter, Land, Wohnort, Sprachen, Beruf, Hobby" or a topic card such as "Essen – Frühstück?". She answers out loud **into the microphone**. Use speech recognition (Web Speech API, `de-DE`) to show what she said and tick off the points she covered. Then show an example answer (with audio) and let her rate herself. If the microphone is unavailable, she speaks aloud and compares.
 
 ## 4. Modes
 - **Quick practice:** 10 random mixed questions (the default, one tap from the start screen).
@@ -77,7 +79,7 @@ Use the vocabulary of the official Goethe A1 word list as a reference. Keep sent
 
 ## 6. Design and accessibility (important)
 - Large text (at least 20px), large buttons, high contrast, and one question per screen.
-- Mobile-first: she will mostly use a phone or tablet.
+- Designed for a computer screen first, with a layout that still works at phone width.
 - Give clear feedback right away: green ✓ or red ✗, the correct answer, and the explanation. Never show harsh error messages.
 - Include a German **umlaut and ß helper keyboard** (ä ö ü ß) for typing answers.
 - Accept small spelling mistakes in typed answers. If the answer is close, say so ("Fast richtig!") and show the correct spelling.
@@ -85,8 +87,8 @@ Use the vocabulary of the official Goethe A1 word list as a reference. Keep sent
 - Make it installable as a PWA so it works offline and can be opened from the home screen.
 
 ## 7. Tech
-- React + Vite + TypeScript + Tailwind, with no backend. Deployable to GitHub Pages or Netlify.
-- Question data goes in `/src/data/*.json` with one shared schema, for example:
+- A static site with no build step and no backend (plain HTML, CSS and JavaScript). Deployable to GitHub Pages.
+- Question data goes in `js/data/*.js` with one shared shape, for example:
   `{ id, skill, topic, type, prompt, audioText?, options?, answer, explanation, difficulty }`.
 - Write a validation script that checks every question against the schema and flags duplicates.
 - Write a README that explains how to add new questions by editing the JSON.

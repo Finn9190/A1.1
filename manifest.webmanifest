@@ -1,0 +1,14 @@
+{
+  "name": "A1.1 Deutsch-Trainer",
+  "short_name": "Deutsch A1",
+  "description": "Übungen für die Deutschprüfung A1.1",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#2346c8",
+  "lang": "de",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
